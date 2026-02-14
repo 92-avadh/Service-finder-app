@@ -1,26 +1,44 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Home from './pages/Home';
 import Services from './pages/Services';
 import ServiceDetails from './pages/ServiceDetails';
 import CustomerDashboard from './pages/CustomerDashboard';
-import Login from './pages/Login';   // Import Login
-import Signup from './pages/Signup'; // Import Signup
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { currentUser } = useAuth();
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+};
 
 function App() {
   return (
-    <Router>
+    <AuthProvider>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/services" element={<Services />} />
         <Route path="/service-details" element={<ServiceDetails />} />
-        <Route path="/dashboard" element={<CustomerDashboard />} />
         
-        {/* Separate Auth Routes */}
+        {/* Protected Dashboard Route */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <CustomerDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
       </Routes>
-    </Router>
+    </AuthProvider>
   );
 }
 

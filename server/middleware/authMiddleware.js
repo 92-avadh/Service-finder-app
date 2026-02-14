@@ -1,14 +1,7 @@
-const admin = require('firebase-admin');
-const serviceAccount = require('../config/serviceAccountKey.json');
-
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
+const axios = require('axios');
 
 const verifyToken = async (req, res, next) => {
+  // 1. Get the token from the header
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -16,12 +9,26 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken;
+    // 2. Verify token by calling Google's API directly
+    const googleResponse = await axios.get(
+      `https://www.googleapis.com/oauth2/v3/userinfo`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const googleUser = googleResponse.data;
+
+    // 3. Map Google data to what your controller expects
+    req.user = {
+      uid: googleUser.sub, // 'sub' is the unique Google ID
+      email: googleUser.email,
+      name: googleUser.name,
+      picture: googleUser.picture
+    };
+
     next();
   } catch (error) {
-    console.error('Error verifying token:', error);
-    return res.status(403).json({ message: 'Unauthorized' });
+    console.error("Token verification failed:", error.response?.data || error.message);
+    return res.status(403).json({ message: 'Invalid or expired token' });
   }
 };
 

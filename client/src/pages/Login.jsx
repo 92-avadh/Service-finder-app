@@ -1,18 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithGoogle } from '../firebase';
+import { signInWithGoogle, auth } from '../firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [userType, setUserType] = useState('customer');
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, navigate]);
 
   const handleGoogleLogin = async () => {
     try {
-      const user = await signInWithGoogle();
-      console.log("User logged in:", user);
-      // Success! Redirect to dashboard
+      await signInWithGoogle();
       navigate('/dashboard');
     } catch (error) {
+      console.error(error);
       alert("Login failed. Please try again.");
+    }
+  };
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error(error);
+      alert("Invalid email or password.");
     }
   };
 
@@ -28,13 +50,22 @@ const Login = () => {
         </div>
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
         
+        {/* Back to Home Button (Desktop) */}
+        <div className="absolute top-10 left-10 z-30">
+          <Link to="/" className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white transition-colors bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-md shadow-sm">
+            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+            <span>Back to Home</span>
+          </Link>
+        </div>
+
         <div className="relative z-20 max-w-lg">
-          <div className="mb-6 flex items-center gap-3 text-white">
+          <Link to="/" className="mb-6 flex items-center gap-3 text-white hover:opacity-80 transition-opacity w-fit">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20 backdrop-blur-sm">
               <span className="material-symbols-outlined text-white text-2xl">handyman</span>
             </div>
             <h2 className="text-xl font-bold tracking-tight">ServiceFinder</h2>
-          </div>
+          </Link>
+          
           <h1 className="mb-4 text-4xl font-bold leading-tight tracking-tight text-white lg:text-5xl">
             Welcome back!
           </h1>
@@ -45,16 +76,26 @@ const Login = () => {
       </div>
 
       {/* Right Side: Login Form */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white dark:bg-background-dark px-4 py-12 sm:px-6 lg:px-20 xl:px-24">
-        <div className="flex w-full max-w-sm flex-col gap-8">
+      <div className="relative flex flex-1 flex-col items-center justify-center bg-white dark:bg-background-dark px-4 py-12 sm:px-6 lg:px-20 xl:px-24">
+        
+        {/* Back to Home Button (Mobile) */}
+        <Link 
+          to="/" 
+          className="absolute top-6 left-6 lg:hidden flex items-center gap-2 px-4 py-2 text-sm font-bold transition-colors rounded-full backdrop-blur-md bg-white/80 dark:bg-background-dark/80 text-slate-900 dark:text-white shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+           <span>Back</span>
+        </Link>
+
+        <div className="flex w-full max-w-sm flex-col gap-8 mt-16 lg:mt-0">
           
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 text-[#111218] dark:text-white mb-4">
+          <Link to="/" className="lg:hidden flex items-center gap-2 text-[#111218] dark:text-white mb-4 w-fit">
             <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
               <span className="material-symbols-outlined">handyman</span>
             </div>
             <span className="text-xl font-bold tracking-tight">ServiceFinder</span>
-          </div>
+          </Link>
 
           <div className="flex flex-col gap-2">
             <h2 className="text-3xl font-bold tracking-tight text-[#111218] dark:text-white">
@@ -65,7 +106,33 @@ const Login = () => {
             </p>
           </div>
 
-          <form className="flex flex-col gap-5" onSubmit={(e) => e.preventDefault()}>
+          {/* User Type Toggle */}
+          <div className="grid grid-cols-2 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
+            <button 
+              type="button"
+              onClick={() => setUserType('customer')}
+              className={`flex items-center justify-center rounded-md py-2.5 text-sm font-bold transition-all ${
+                userType === 'customer' 
+                  ? 'bg-white dark:bg-background-dark text-[#111218] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#111218] dark:hover:text-white'
+              }`}
+            >
+              Customer
+            </button>
+            <button 
+              type="button"
+              onClick={() => setUserType('provider')}
+              className={`flex items-center justify-center rounded-md py-2.5 text-sm font-bold transition-all ${
+                userType === 'provider' 
+                  ? 'bg-white dark:bg-background-dark text-[#111218] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#111218] dark:hover:text-white'
+              }`}
+            >
+              Professional
+            </button>
+          </div>
+
+          <form className="flex flex-col gap-5" onSubmit={handleEmailLogin}>
             {/* Email Input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-[#111218] dark:text-white" htmlFor="email">
@@ -75,7 +142,14 @@ const Login = () => {
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <span className="material-symbols-outlined text-gray-400 text-[20px]">mail</span>
                 </div>
-                <input className="block w-full rounded-lg border-0 py-3 pl-10 text-[#111218] shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-background-dark dark:ring-gray-700 dark:text-white sm:text-sm sm:leading-6" id="email" type="email" placeholder="name@example.com"/>
+                <input 
+                  className="block w-full rounded-lg border-0 py-3 pl-10 text-[#111218] shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-background-dark dark:ring-gray-700 dark:text-white sm:text-sm sm:leading-6" 
+                  id="email" 
+                  type="email" 
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
             </div>
 
@@ -93,12 +167,19 @@ const Login = () => {
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <span className="material-symbols-outlined text-gray-400 text-[20px]">lock</span>
                 </div>
-                <input className="block w-full rounded-lg border-0 py-3 pl-10 text-[#111218] shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-background-dark dark:ring-gray-700 dark:text-white sm:text-sm sm:leading-6" id="password" type="password" placeholder="Enter your password"/>
+                <input 
+                  className="block w-full rounded-lg border-0 py-3 pl-10 text-[#111218] shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-background-dark dark:ring-gray-700 dark:text-white sm:text-sm sm:leading-6" 
+                  id="password" 
+                  type="password" 
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </div>
 
             <button className="flex w-full items-center justify-center rounded-lg bg-primary py-3 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors" type="submit">
-              Sign in
+              Sign in as {userType === 'customer' ? 'Customer' : 'Professional'}
             </button>
           </form>
 
@@ -111,14 +192,14 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Google Button */}
-          <div>
+          <div className="grid grid-cols-1 gap-3">
             <button 
               onClick={handleGoogleLogin}
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-white dark:bg-gray-800 py-2.5 px-3 text-sm font-semibold text-[#111218] dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
+              {/* ORIGINAL GOOGLE LOGO */}
+              <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
                 <path d="M12.0003 20.45c4.6667 0 8.45-3.7833 8.45-8.45 0-.5833-.0667-1.15-.1667-1.7h-8.2833v3.2167h4.8333c-.2333 1.15-.9 2.1167-1.8833 2.7667l2.9667 2.3c1.7833-1.65 2.8167-4.0833 2.8167-6.9167 0-6.6333-5.3667-12-12-12s-12 5.3667-12 12 5.3667 12 12 12z" fill="#4285F4" fillRule="evenodd"></path>
                 <path d="M12.0003 20.45c-2.4333 0-4.6333-1.0167-6.1833-2.65l2.9167-2.3167c.9667.65 2.1667 1.05 3.2667 1.05 3.0333 0 5.5833-2.05 6.5-4.8333h3.1833v2.5333c-1.6167 3.2167-4.9333 5.4167-8.6833 5.4167z" fill="#34A853" fillRule="evenodd"></path>
                 <path d="M5.5003 14.6167c-.2333-.7167-.3667-1.4833-.3667-2.2833s.1333-1.5667.3833-2.2833l-3.1833-2.55c-.65 1.3-1.0167 2.7667-1.0167 4.3167s.3667 3.0167 1.0167 4.3333l3.1667-2.5333z" fill="#FBBC05" fillRule="evenodd"></path>
