@@ -18,12 +18,12 @@ const servicesData = [
   },
   {
     name: "Sarah Jenkins",
-    category: "Cleaning", // Changed from "House Cleaning" to match filters
+    category: "Cleaning",
     rating: 4.8,
     reviews: 85,
     price: "₹299/hr",
     location: "Bangalore, KA",
-    image: "https://images.unsplash.com/photo-1581579186913-45ac3e6e3dd2?auto=format&fit=crop&q=80&w=400",
+    image: "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=400",
     about: "Professional home cleaner known for attention to detail and eco-friendly products.",
     isFeatured: true
   },
@@ -67,7 +67,7 @@ const servicesData = [
     reviews: 150,
     price: "₹350/hr",
     location: "Chennai, TN",
-    image: "https://images.unsplash.com/photo-1622383563227-044011358d16?auto=format&fit=crop&q=80&w=400",
+    image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&q=80&w=400",
     about: "Landscape designer and garden maintenance expert.",
     isFeatured: false
   }
@@ -79,7 +79,7 @@ const seedDB = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     
     console.log('🧹 Clearing old services...');
-    await Service.deleteMany({}); // Clear existing services
+    await Service.deleteMany({});
     
     console.log('🌱 Seeding new services...');
     await Service.insertMany(servicesData);

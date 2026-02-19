@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 const CustomerDashboard = () => {
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming');
 
-  // Mock Data for Bookings
+  // Mock Data for Bookings (These are still mock data for now)
   const bookings = [
     {
       id: 1,
@@ -57,10 +59,19 @@ const CustomerDashboard = () => {
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
               <div className="p-6 border-b border-slate-100 dark:border-slate-700 text-center">
                 <div className="w-20 h-20 bg-slate-200 rounded-full mx-auto mb-3 overflow-hidden">
-                   <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200" alt="User" className="w-full h-full object-cover" />
+                   {/* DYNAMIC USER IMAGE */}
+                   <img 
+                     src={currentUser?.photoURL || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"} 
+                     alt="User" 
+                     className="w-full h-full object-cover" 
+                   />
                 </div>
-                <h2 className="font-bold text-slate-900 dark:text-white">Alex Johnson</h2>
-                <p className="text-xs text-slate-500">alex.j@example.com</p>
+                {/* DYNAMIC USER NAME */}
+                <h2 className="font-bold text-slate-900 dark:text-white">
+                  {currentUser?.displayName || currentUser?.email?.split('@')[0] || "User"}
+                </h2>
+                {/* DYNAMIC USER EMAIL */}
+                <p className="text-xs text-slate-500">{currentUser?.email}</p>
               </div>
               <nav className="p-2">
                 <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg bg-primary/10 text-primary">

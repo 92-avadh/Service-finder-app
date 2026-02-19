@@ -96,7 +96,7 @@ const Home = () => {
               </div>
               
               <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                Expert services, <br/> 
+                Expert services <br/> 
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
                   on demand.
                 </span>
@@ -173,7 +173,7 @@ const Home = () => {
             {/* Grid of ServiceCards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredPros.map((pro, index) => (
-                <ServiceCard key={pro.id} {...pro} delay={index * 100 + 600} />
+                <ServiceCard key={pro.id} service={pro} delay={index * 100 + 600} />
               ))}
             </div>
           </div>

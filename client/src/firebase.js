@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-// Your specific Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyB_77hFB7ffRxZo2Ay8o-hX9dp8ARc8CLQ",
   authDomain: "servicefinder-35c68.firebaseapp.com",
@@ -14,15 +13,24 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+const auth = getAuth(app);
 
-export const signInWithGoogle = async () => {
+// Configure Google Provider
+const googleProvider = new GoogleAuthProvider();
+
+// FORCE ACCOUNT SELECTION: This forces the "Choose an Account" screen every time
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    return result.user; // Contains name, email, photoURL
+    return result.user;
   } catch (error) {
     console.error("Error signing in with Google", error);
     throw error;
   }
 };
+
+export { auth, googleProvider, signInWithGoogle };
