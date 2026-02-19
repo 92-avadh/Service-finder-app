@@ -2,23 +2,22 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB_77hFB7ffRxZo2Ay8o-hX9dp8ARc8CLQ",
-  authDomain: "servicefinder-35c68.firebaseapp.com",
-  projectId: "servicefinder-35c68",
-  storageBucket: "servicefinder-35c68.firebasestorage.app",
-  messagingSenderId: "243264113406",
-  appId: "1:243264113406:web:1ab0c0941b0dc5eef573af",
-  measurementId: "G-X144FVJCNE"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Configure Google Provider
+// Google Provider
 const googleProvider = new GoogleAuthProvider();
 
-// FORCE ACCOUNT SELECTION: This forces the "Choose an Account" screen every time
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
