@@ -28,7 +28,7 @@ const ProviderDashboard = () => {
     if (!proId) return;
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings/provider`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/provider`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache'}
       });
@@ -44,7 +44,7 @@ const ProviderDashboard = () => {
   useEffect(() => {
     if (!proId) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    const socket = io('http://localhost:5000');
+    const socket = io('https://service-finder-app.onrender.com');
     
     socket.emit('join_dashboard', String(proId));
 
@@ -64,7 +64,7 @@ const ProviderDashboard = () => {
   const handleStatusUpdate = async (bookingId, newStatus) => {
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/status`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${bookingId}/status`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: newStatus })
       });
       if (response.ok) {
@@ -78,7 +78,7 @@ const ProviderDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings/${otpBooking._id}/start`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${otpBooking._id}/start`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ otp: otpInput })
       });
       if (response.ok) {
@@ -97,7 +97,7 @@ const ProviderDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings/${billingBooking._id}/bill`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${billingBooking._id}/bill`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ finalPrice: Number(finalAmount) })
       });
       if (response.ok) {
@@ -111,7 +111,7 @@ const ProviderDashboard = () => {
   const handleConfirmPayment = async (bookingId) => {
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/confirm-payment`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${bookingId}/confirm-payment`, {
         method: 'PUT', headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -386,7 +386,7 @@ const ProviderDashboard = () => {
                   const updates = Object.fromEntries(formData.entries());
                   
                   try {
-                    const res = await fetch('http://localhost:5000/api/users/profile', {
+                    const res = await fetch('https://service-finder-app.onrender.com/api/users/profile', {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                       body: JSON.stringify(updates)

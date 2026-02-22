@@ -37,7 +37,7 @@ const CustomerDashboard = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings?email=${userEmail}`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings?email=${userEmail}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
       });
       if (response.ok) setBookings(await response.json() || []);
@@ -49,7 +49,7 @@ const CustomerDashboard = () => {
   useEffect(() => {
     if (!userEmail) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    const socket = io('http://localhost:5000');
+    const socket = io('https://service-finder-app.onrender.com');
     socket.emit('join_dashboard', String(userEmail));
     socket.on('booking_status_updated', (updatedBooking) => {
       try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
@@ -65,7 +65,7 @@ const CustomerDashboard = () => {
         setIsFetchingFavs(true);
         try {
           const token = localStorage.getItem('serviceFinderToken');
-          const response = await fetch('http://localhost:5000/api/users/favorites', { headers: { 'Authorization': `Bearer ${token}` }});
+          const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites', { headers: { 'Authorization': `Bearer ${token}` }});
           if (response.ok) setFavorites(await response.json());
         } catch (error) {} finally { setIsFetchingFavs(false); }
       };
@@ -76,7 +76,7 @@ const CustomerDashboard = () => {
   const removeFavorite = async (providerId) => {
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch('http://localhost:5000/api/users/favorites/toggle', {
+      const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites/toggle', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ providerId })
       });
       if (response.ok) setFavorites(favorites.filter(fav => fav._id !== providerId));
@@ -90,7 +90,7 @@ const CustomerDashboard = () => {
     
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const response = await fetch(`http://localhost:5000/api/bookings/${rescheduleBooking._id}/reschedule`, {
+      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${rescheduleBooking._id}/reschedule`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ date: newDate, time: newTime })
@@ -378,7 +378,7 @@ const CustomerDashboard = () => {
                   const updates = { name: formData.get('name'), phone: formData.get('phone') };
                   
                   try {
-                    const res = await fetch('http://localhost:5000/api/users/profile', {
+                    const res = await fetch('https://service-finder-app.onrender.com/api/users/profile', {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                       body: JSON.stringify(updates)

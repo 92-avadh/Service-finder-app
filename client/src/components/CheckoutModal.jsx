@@ -19,7 +19,7 @@ const CardForm = ({ booking, onSuccess }) => {
     
     try {
       // 1. Ask backend for the secret intent
-      const res = await fetch('http://localhost:5000/api/payments/create-payment-intent', {
+      const res = await fetch('https://service-finder-app.onrender.com/api/payments/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ price: booking.finalPrice })
@@ -37,7 +37,7 @@ const CardForm = ({ booking, onSuccess }) => {
       }
       else if (paymentIntent.status === 'succeeded') {
         // 3. Mark as paid in DB
-        await fetch(`http://localhost:5000/api/bookings/${booking._id}/pay`, {
+        await fetch(`https://service-finder-app.onrender.com/api/bookings/${booking._id}/pay`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ paymentMethod: 'Card' })
@@ -71,7 +71,7 @@ const CheckoutModal = ({ booking, onClose, onSuccess }) => {
     setIsProcessingCOD(true);
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      const res = await fetch(`http://localhost:5000/api/bookings/${booking._id}/pay`, {
+      const res = await fetch(`https://service-finder-app.onrender.com/api/bookings/${booking._id}/pay`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ paymentMethod: 'COD' })

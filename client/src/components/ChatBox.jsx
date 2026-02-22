@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
 
 // Connect to the backend socket server
-const socket = io('http://localhost:5000');
+const socket = io('https://service-finder-app.onrender.com');
 
 const ChatBox = ({ booking, onClose }) => {
   const { currentUser } = useAuth();
@@ -21,7 +21,7 @@ const ChatBox = ({ booking, onClose }) => {
     const fetchMessages = async () => {
       try {
         const token = localStorage.getItem('serviceFinderToken');
-        const response = await fetch(`http://localhost:5000/api/chat/${booking._id}`, {
+        const response = await fetch(`https://service-finder-app.onrender.com/api/chat/${booking._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -66,7 +66,7 @@ const ChatBox = ({ booking, onClose }) => {
 
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      await fetch('http://localhost:5000/api/chat', {
+      await fetch('https://service-finder-app.onrender.com/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

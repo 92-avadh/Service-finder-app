@@ -21,7 +21,7 @@ const Login = () => {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/google', {
+        const response = await fetch('https://service-finder-app.onrender.com/api/auth/google', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ const Login = () => {
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('https://service-finder-app.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

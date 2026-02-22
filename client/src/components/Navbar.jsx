@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:5000');
+const socket = io('https://service-finder-app.onrender.com');
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ const Navbar = () => {
     const fetchNotifications = async () => {
       try {
         const token = localStorage.getItem('serviceFinderToken');
-        const response = await fetch('http://localhost:5000/api/notifications', {
+        const response = await fetch('https://service-finder-app.onrender.com/api/notifications', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) setNotifications(await response.json());
@@ -68,7 +68,7 @@ const Navbar = () => {
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem('serviceFinderToken');
-      await fetch('http://localhost:5000/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+      await fetch('https://service-finder-app.onrender.com/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (error) {}
   };

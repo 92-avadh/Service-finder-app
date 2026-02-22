@@ -19,7 +19,7 @@ const Services = () => {
     const fetchServices = async () => {
       setIsLoading(true);
       try {
-        let url = `http://localhost:5000/api/services?category=${activeCategory}`;
+        let url = `https://service-finder-app.onrender.com/api/services?category=${activeCategory}`;
         if (searchTerm) url += `&search=${searchTerm}`;
         
         const response = await fetch(url);

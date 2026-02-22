@@ -11,7 +11,7 @@ const Home = () => {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/services/featured');
+        const res = await fetch('https://service-finder-app.onrender.com/api/services/featured');
         if (res.ok) setFeaturedPros(await res.json());
       } catch (error) { console.error("Error fetching featured pros", error); }
     };
