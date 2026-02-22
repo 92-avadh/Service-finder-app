@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
 
+// Connect to the backend socket server
 const socket = io('https://service-finder-app.onrender.com');
 
 const ChatBox = ({ booking, onClose }) => {
@@ -15,6 +16,7 @@ const ChatBox = ({ booking, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // 1. Initial Data Load & Socket Connection
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -35,12 +37,15 @@ const ChatBox = ({ booking, onClose }) => {
 
     fetchMessages();
 
-    socket.emit('join_chat_room', booking._id);
+    // Join the specific real-time room for this booking
+    socket.emit('join_chat_room', String(booking._id));
 
+    // Listen for instant incoming messages
     socket.on('receive_message', (incomingMessage) => {
       setMessages((prevMessages) => [...prevMessages, incomingMessage]);
     });
 
+    // Cleanup listener when chat is closed
     return () => {
       socket.off('receive_message');
     };
@@ -50,6 +55,7 @@ const ChatBox = ({ booking, onClose }) => {
     scrollToBottom();
   }, [messages]);
 
+  // 2. Send Message
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -67,7 +73,7 @@ const ChatBox = ({ booking, onClose }) => {
         },
         body: JSON.stringify({
           bookingId: booking._id,
-          sender: currentUser.name || currentUser.email.split('@')[0], // <-- FIX: Backend requires this sender field!
+          sender: currentUser.name || currentUser.email.split('@')[0], // FIX 1: ADDED MISSING SENDER FIELD!
           text: textToSend
         })
       });
@@ -76,7 +82,7 @@ const ChatBox = ({ booking, onClose }) => {
     }
   };
 
-  const chatPartnerName = currentUser.role === 'customer' ? booking.provider : booking.customerEmail;
+  const chatPartnerName = currentUser.role === 'customer' ? booking.provider : booking.customerEmail.split('@')[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -109,12 +115,12 @@ const ChatBox = ({ booking, onClose }) => {
             </div>
           ) : (
             messages.map((msg, index) => {
-              // FIX: Correctly check sender ownership so bubbles align left/right properly
-              const isMe = msg.sender === currentUser.name || msg.senderId === currentUser._id || msg.senderName === currentUser.name || msg.sender === currentUser.email.split('@')[0];
+              // FIX 2: Correctly checking 'msg.sender' to align bubbles left or right
+              const isMe = msg.sender === currentUser.name || msg.sender === currentUser.email.split('@')[0];
               
               return (
                 <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[10px] text-slate-400 mb-1 px-1">{msg.sender || msg.senderName}</span>
+                  <span className="text-[10px] text-slate-400 mb-1 px-1">{msg.sender}</span>
                   <div className={`px-4 py-2.5 rounded-2xl max-w-[80%] text-sm ${
                     isMe 
                       ? 'bg-primary text-white rounded-tr-sm shadow-sm' 
