@@ -10,10 +10,12 @@ dotenv.config();
 const app = express();
 
 const server = http.createServer(app);
+
+// --- CORS & SOCKET SETUP ---
 const io = new Server(server, {
   cors: {
-    // Note: When you deploy to Vercel, change this to your actual frontend URL
-    origin: ["http://localhost:3000", "https://your-app-name.vercel.app"],
+    // IMPORTANT: Add your Vercel URL here so it has permission to connect!
+    origin: ["http://localhost:3000", "https://your-vercel-frontend-url.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
@@ -54,7 +56,9 @@ io.on('connection', (socket) => {
 });
 
 // General Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", "https://your-vercel-frontend-url.vercel.app"]
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -67,6 +71,11 @@ const notificationRoutes = require('./routes/notifications');
 const reviewRoutes = require('./routes/reviews');
 const userRoutes = require('./routes/users'); 
 const paymentRoutes = require('./routes/payments'); 
+
+// --- HEALTH CHECK ROUTE ---
+app.get('/', (req, res) => {
+  res.send('🚀 ServiceFinder API is Live and Running perfectly on Render!');
+});
 
 // --- USE ROUTES ---
 app.use('/api/auth', authRoutes);
