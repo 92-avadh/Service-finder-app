@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// --- FIX: SET CORS TO "*" SO VERCEL IS NOT BLOCKED ---
+// --- FIX 1: SET CORS TO "*" SO VERCEL IS NOT BLOCKED ---
 const io = new Server(server, {
   cors: {
     origin: "*", 
@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// --- FIX: SET EXPRESS CORS TO "*" ---
+// --- FIX 2: SET EXPRESS CORS TO "*" ---
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
