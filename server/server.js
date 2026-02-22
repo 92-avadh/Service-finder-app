@@ -12,13 +12,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    // Note: When you deploy to Vercel, change this to your actual frontend URL
+    origin: ["http://localhost:3000", "https://your-app-name.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 
-app.set('io', io);
-
+// Middleware to make 'io' accessible in all routes via req.io
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -27,18 +27,25 @@ app.use((req, res, next) => {
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
+  // Used for real-time status updates on the Dashboard
   socket.on('join_dashboard', (userId) => {
-    // FIX: Safely parse to string so it perfectly joins the right room
-    socket.join(String(userId));
-    console.log(`User joined personal dashboard room: ${userId}`);
+    const room = String(userId);
+    socket.join(room);
+    console.log(`User joined dashboard room: ${room}`);
   });
 
+  // Used for real-time chat messages
   socket.on('join_chat_room', (bookingId) => {
-    socket.join(bookingId);
+    const room = String(bookingId);
+    socket.join(room);
+    console.log(`User joined chat room: ${room}`);
   });
 
+  // Used for the Navbar Notification Bell
   socket.on('join_notification_room', (userId) => {
-    socket.join(userId);
+    const room = String(userId);
+    socket.join(room);
+    console.log(`User joined notification room: ${room}`);
   });
 
   socket.on('disconnect', () => {
@@ -46,10 +53,12 @@ io.on('connection', (socket) => {
   });
 });
 
+// General Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// --- IMPORT ROUTES ---
 const authRoutes = require('./routes/auth');
 const serviceRoutes = require('./routes/services');
 const bookingRoutes = require('./routes/bookings');
@@ -59,6 +68,7 @@ const reviewRoutes = require('./routes/reviews');
 const userRoutes = require('./routes/users'); 
 const paymentRoutes = require('./routes/payments'); 
 
+// --- USE ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
@@ -68,6 +78,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/payments', paymentRoutes); 
 
+// Database Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/Service-db')
   .then(() => console.log('✅ MongoDB connected successfully'))
   .catch((err) => console.log('❌ MongoDB connection error:', err));
