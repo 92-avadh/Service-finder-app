@@ -7,25 +7,25 @@ const About = () => {
     {
       name: "Avadh",
       role: "Lead Full-Stack Developer",
-      image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=400",
+      image: "/dev1.jpg",
       bio: "Architected the core platform, secure OTP workflow, and real-time socket integrations."
     },
     {
-      name: "Rohan Patel",
+      name: "Zeel",
       role: "Frontend Engineer",
-      image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=400",
+      image: "/dev4.jpg",
       bio: "Crafted the beautiful, responsive, and accessible user interfaces with Tailwind CSS."
     },
     {
-      name: "Priya Sharma",
+      name: "Smit",
       role: "Backend Specialist",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
+      image: "/dev3.jpg",
       bio: "Ensured maximum database security, fast queries, and seamless Stripe payments."
     },
     {
-      name: "Amit Kumar",
+      name: "Ravi",
       role: "UI/UX Designer",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+      image: "/dev2.jpg",
       bio: "Designed the modern glassmorphism components and seamless user journey."
     }
   ];

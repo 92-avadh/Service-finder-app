@@ -109,26 +109,11 @@ const Navbar = () => {
 
             {currentUser ? (
               <div className="flex items-center gap-4 border-l pl-6 border-slate-200 dark:border-slate-800 relative">
-                {/* Notifications */}
-                <div className="relative">
-                  <button onClick={() => { setIsNotifOpen(!isNotifOpen); if (unreadCount > 0) handleMarkAllRead(); }} className="p-2 rounded-full text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors relative">
-                    <span className="material-symbols-outlined text-2xl">notifications</span>
-                    {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#0f1117]"></span>}
-                  </button>
-                  {isNotifOpen && (
-                    <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
-                      <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50"><h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3></div>
-                      <div className="max-h-80 overflow-y-auto">
-                        {notifications.length === 0 ? <div className="p-6 text-center text-sm text-slate-500">You're all caught up!</div> : notifications.map(n => (
-                          <div key={n._id} className={`p-4 border-b border-slate-100 dark:border-slate-800/50 flex gap-3 ${n.isRead ? 'opacity-70' : 'bg-blue-50/50 dark:bg-blue-900/10'}`}>
-                            <div className="size-8 rounded-full flex items-center justify-center shrink-0 bg-blue-100 text-blue-600"><span className="material-symbols-outlined text-[18px]">chat</span></div>
-                            <div><p className="text-sm font-medium text-slate-900 dark:text-slate-200">{n.text}</p></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* Desktop Notification Bell */}
+                <button onClick={() => { setIsNotifOpen(!isNotifOpen); if (unreadCount > 0) handleMarkAllRead(); }} className="p-2 rounded-full text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors relative">
+                  <span className="material-symbols-outlined text-2xl">notifications</span>
+                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#0f1117]"></span>}
+                </button>
                 <Link to="/dashboard">
                   <div className="size-10 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
                      <img src={currentUser.image || currentUser.photoURL || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"} alt="Profile" className="w-full h-full object-cover"/>
@@ -150,7 +135,8 @@ const Navbar = () => {
                <span className="material-symbols-outlined">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
              </button>
              {currentUser && (
-               <button onClick={() => navigate('/dashboard')} className="p-2 text-slate-600 dark:text-slate-300 relative">
+               /* FIX: Now correctly toggles dropdown instead of navigating! */
+               <button onClick={() => { setIsNotifOpen(!isNotifOpen); if (unreadCount > 0) handleMarkAllRead(); }} className="p-2 text-slate-600 dark:text-slate-300 relative">
                  <span className="material-symbols-outlined">notifications</span>
                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2 bg-red-500 rounded-full"></span>}
                </button>
@@ -159,6 +145,35 @@ const Navbar = () => {
                 <span className="material-symbols-outlined text-2xl">{isMobileMenuOpen ? 'close' : 'menu'}</span>
              </button>
           </div>
+
+          {/* --- FIX: UNIFIED NOTIFICATION DROPDOWN (Now outside the hidden desktop div) --- */}
+          {isNotifOpen && currentUser && (
+            <div className="absolute right-4 md:right-32 top-16 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
+                <button onClick={() => setIsNotifOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                   <div className="p-6 text-center text-sm text-slate-500">You're all caught up!</div>
+                ) : (
+                  notifications.map(n => (
+                    <div key={n._id} className={`p-4 border-b border-slate-100 dark:border-slate-800/50 flex gap-3 ${n.isRead ? 'opacity-70' : 'bg-blue-50/50 dark:bg-blue-900/10'}`}>
+                      <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${n.type === 'message' ? 'bg-blue-100 text-blue-600' : n.type === 'status' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                        <span className="material-symbols-outlined text-[18px]">{n.type === 'message' ? 'chat' : n.type === 'status' ? 'task_alt' : 'event_available'}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{n.text}</p>
+                        <span className="text-xs text-slate-400 mt-1 block">Just now</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
