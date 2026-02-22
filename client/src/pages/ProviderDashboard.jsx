@@ -12,7 +12,6 @@ const ProviderDashboard = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile Menu State
   const [bookings, setBookings] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeChatBooking, setActiveChatBooking] = useState(null);
 
   // Billing & OTP Modals
@@ -28,7 +27,6 @@ const ProviderDashboard = () => {
   const fetchProviderBookings = useCallback(async () => {
     if (!proId) return;
     try {
-      setIsLoading(true);
       const token = localStorage.getItem('serviceFinderToken');
       const response = await fetch(`http://localhost:5000/api/bookings/provider`, {
         method: 'GET',
@@ -37,7 +35,7 @@ const ProviderDashboard = () => {
       if (response.ok) {
         setBookings(await response.json() || []);
       }
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { console.error(error); } 
   }, [proId]);
 
   useEffect(() => { fetchProviderBookings(); }, [fetchProviderBookings]);
@@ -262,7 +260,7 @@ const ProviderDashboard = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-5">
+                        <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-5">
                            
                            {(booking.status === 'Pending' || !booking.status) && (
                              <>
@@ -362,19 +360,18 @@ const ProviderDashboard = () => {
                 </div>
                 <div className="space-y-4">
                   {bookings.filter(b => ['Confirmed', 'In Progress', 'Payment Pending', 'Payment Verification'].includes(b.status)).map(booking => (
-                    <div key={booking._id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div key={booking._id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex justify-between">
                       <div className="flex items-center gap-4">
                         <div className="size-16 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 font-bold text-2xl">{booking.customerEmail.charAt(0).toUpperCase()}</div>
                         <div><h3 className="font-bold dark:text-white text-lg">{booking.customerEmail.split('@')[0]}</h3><p className="text-slate-500 text-sm font-medium">{booking.service}</p></div>
                       </div>
-                      <button onClick={() => setActiveChatBooking(booking)} className="w-full sm:w-auto px-6 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2"><span className="material-symbols-outlined">chat</span>Open Chat</button>
+                      <button onClick={() => setActiveChatBooking(booking)} className="px-6 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold flex items-center gap-2"><span className="material-symbols-outlined">chat</span>Open Chat</button>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* --- EDIT PROFILE TAB --- */}
             {activeNav === 'profile' && (
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200/60 dark:border-slate-800">
@@ -434,7 +431,7 @@ const ProviderDashboard = () => {
                     <textarea name="about" rows="4" defaultValue={currentUser?.about} className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white outline-none"></textarea>
                   </div>
 
-                  <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-colors shadow-md">
+                  <button type="submit" className="px-8 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-colors shadow-md">
                     Save Profile Updates
                   </button>
                 </form>
@@ -445,7 +442,6 @@ const ProviderDashboard = () => {
         </div>
       </div>
 
-      {/* --- START JOB OTP MODAL --- */}
       {otpBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
@@ -463,7 +459,7 @@ const ProviderDashboard = () => {
                 maxLength="4" 
                 required 
                 value={otpInput} 
-                onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))} // Only allow numbers
+                onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))} 
                 className="w-full text-center text-4xl tracking-[0.5em] font-black py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white mb-6 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700" 
                 placeholder="0000" 
               />
@@ -476,7 +472,6 @@ const ProviderDashboard = () => {
         </div>
       )}
 
-      {/* --- BILLING MODAL --- */}
       {billingBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl border border-slate-200 dark:border-slate-800">

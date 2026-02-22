@@ -236,14 +236,12 @@ const CustomerDashboard = () => {
                         
                         <div className="flex flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-5 justify-center">
                            
-                           {/* Chat Button */}
                            {['Confirmed', 'In Progress', 'Payment Pending', 'Payment Verification'].includes(booking.status) && (
                              <button onClick={() => setActiveChatBooking(booking)} className="w-full px-4 py-2.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-xl text-sm font-bold hover:bg-blue-200 transition-colors flex items-center justify-center gap-1">
                                <span className="material-symbols-outlined text-[18px]">chat</span> Message Pro
                              </button>
                            )}
 
-                           {/* Payment Action Buttons */}
                            {booking.status === 'Payment Pending' && (
                              <button onClick={() => setActivePaymentBooking(booking)} className="w-full px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md animate-pulse whitespace-nowrap">
                                Pay ₹{booking.finalPrice} Now
@@ -256,12 +254,8 @@ const CustomerDashboard = () => {
                              </span>
                            )}
 
-                           {/* Review Button */}
                            {booking.status === 'Completed' && (
-                             <button 
-                               onClick={() => setActiveReviewBooking(booking)}
-                               className="w-full px-4 py-2.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500 rounded-xl text-sm font-bold hover:bg-yellow-200 transition-colors flex items-center justify-center gap-1"
-                             >
+                             <button onClick={() => setActiveReviewBooking(booking)} className="w-full px-4 py-2.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500 rounded-xl text-sm font-bold hover:bg-yellow-200 transition-colors flex items-center justify-center gap-1">
                                <span className="material-symbols-outlined text-[18px]">star</span> Leave a Review
                              </button>
                            )}
@@ -274,7 +268,7 @@ const CustomerDashboard = () => {
                                   setNewDate(booking.date);
                                   setNewTime(booking.time);
                                }} 
-                               className="w-full px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
+                               className="w-full px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors whitespace-nowrap"
                              >
                                Reschedule
                              </button>
@@ -293,7 +287,6 @@ const CustomerDashboard = () => {
               </div>
             )}
 
-            {/* Other tabs remain identical... */}
             {activeNav === 'favorites' && (
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200/60 dark:border-slate-800">
@@ -396,6 +389,8 @@ const CustomerDashboard = () => {
                        localStorage.setItem('serviceFinderUser', JSON.stringify(data.user)); 
                        alert("Profile updated successfully!");
                        window.location.reload(); 
+                    } else {
+                       alert(data.message || "Failed to update profile.");
                     }
                   } catch (err) { alert("Error saving profile"); }
                 }} className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800">
