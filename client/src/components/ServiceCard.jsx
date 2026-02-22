@@ -47,7 +47,7 @@ const ServiceCard = ({ service }) => {
           <div className="flex flex-col">
             <span className="text-xs text-slate-500 dark:text-slate-400">Starting at</span>
             {/* Fix: price already contains ₹ symbol from DB, don't add it again */}
-            <span className="text-lg font-black text-primary">{service.price}</span>
+            <span className="text-lg font-black text-primary">₹{service.price}</span>
           </div>
           <Link to={`/service-details`}>
             <button className="relative overflow-hidden rounded-lg bg-slate-900 dark:bg-white px-4 py-2 text-sm font-bold text-white dark:text-slate-900 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 active:scale-95 group-hover:bg-primary group-hover:text-white dark:group-hover:bg-primary dark:group-hover:text-white">

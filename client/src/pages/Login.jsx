@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithGoogle, auth } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  // Bring in the login function that now accepts the token
+  const { currentUser, login } = useAuth(); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('customer');
@@ -17,24 +17,60 @@ const Login = () => {
     }
   }, [currentUser, navigate]);
 
-  const handleGoogleLogin = async () => {
-    try {
-      await signInWithGoogle();
-      navigate('/dashboard');
-    } catch (error) {
-      console.error(error);
-      alert("Login failed. Please try again.");
-    }
-  };
+  // --- GOOGLE LOGIN (Communicates with your server) ---
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/google', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenResponse.access_token}`
+          },
+          body: JSON.stringify({ role: userType })
+        });
 
+        const data = await response.json();
+
+        if (response.ok) {
+          // WE PASS THE TOKEN HERE
+          login(data.user, data.token); 
+          navigate('/dashboard');
+        } else {
+          alert(data.message || "Google Login failed on server.");
+        }
+      } catch (error) {
+        console.error('Backend authentication failed:', error);
+        alert('Server error during Google Login.');
+      }
+    },
+    onError: error => console.error('Google Login Failed:', error)
+  });
+
+  // --- MANUAL LOGIN (Communicates with your server) ---
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // WE PASS THE TOKEN HERE
+        login(data.user, data.token); 
+        navigate('/dashboard');
+      } else {
+        alert(data.message || "Invalid email or password.");
+      }
     } catch (error) {
-      console.error(error);
-      alert("Invalid email or password.");
+      console.error("Login request failed:", error);
+      alert("Could not connect to the server.");
     }
   };
 
@@ -194,7 +230,7 @@ const Login = () => {
 
           <div className="grid grid-cols-1 gap-3">
             <button 
-              onClick={handleGoogleLogin}
+              onClick={() => handleGoogleLogin()}
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-white dark:bg-gray-800 py-2.5 px-3 text-sm font-semibold text-[#111218] dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >

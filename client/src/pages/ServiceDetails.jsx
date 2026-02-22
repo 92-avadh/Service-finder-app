@@ -1,162 +1,334 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
 
 const ServiceDetails = () => {
-  // Mock Data for a single provider
-  const provider = {
-    name: "Michael Foster",
-    title: "Expert Residential Electrician",
-    rating: 4.9,
-    reviews: 124,
-    location: "Mumbai, Maharashtra",
-    price: 499,
-    image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=600",
-    about: "I have over 10 years of experience in residential and commercial electrical systems. I specialize in troubleshooting, panel upgrades, and lighting installations. My goal is to provide safe and reliable electrical solutions for your home.",
-    services: [
-      "Wiring & Rewiring",
-      "Lighting Installation",
-      "Panel Upgrades",
-      "Outlet Repair",
-      "Circuit Breaker Replacement"
-    ]
-  };
+  const { id } = useParams(); 
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
+  const [service, setService] = useState(null);
+  const [reviews, setReviews] = useState([]); 
+  const [favoriteIds, setFavoriteIds] = useState([]); 
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [isProcessingBooking, setIsProcessingBooking] = useState(false);
+
+  // --- FETCH SERVICE & REVIEWS ---
+  useEffect(() => {
+    const fetchServiceDetails = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`http://localhost:5000/api/services/${id}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setService(data);
+
+          if (data._id) {
+            const reviewsResponse = await fetch(`http://localhost:5000/api/reviews/provider/${data._id}`);
+            if (reviewsResponse.ok) {
+              const reviewsData = await reviewsResponse.json();
+              setReviews(reviewsData);
+            }
+          }
+        } else {
+          setError("Service not found");
+        }
+      } catch (err) {
+        console.error("Error fetching service details:", err);
+        setError("Failed to load service details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id && id !== 'demo') {
+      fetchServiceDetails();
+    } else {
+      setService({
+        name: "Michael Foster",
+        title: "Expert Residential Electrician",
+        category: "Electrical",
+        price: 499,
+        image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=600",
+        about: "I have over 10 years of experience in residential and commercial electrical systems.",
+        location: "Mumbai, Maharashtra",
+        rating: 4.9,
+        phone: "9876543210"
+      });
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  // --- FETCH FAVORITES ---
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!currentUser || currentUser.role !== 'customer') return;
+      try {
+        const token = localStorage.getItem('serviceFinderToken');
+        const response = await fetch('http://localhost:5000/api/users/favorites', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setFavoriteIds(data.map(fav => fav._id));
+        }
+      } catch (error) {
+        console.error("Error fetching favorites:", error);
+      }
+    };
+    fetchFavorites();
+  }, [currentUser]);
+
+  // --- TOGGLE FAVORITE ---
+  const toggleFavorite = async () => {
+    if (!currentUser) {
+      alert("Please log in to save favorites.");
+      navigate('/login');
+      return;
+    }
+    if (currentUser.role === 'provider') {
+      alert("Professionals cannot save favorites.");
+      return;
+    }
+    try {
+      const token = localStorage.getItem('serviceFinderToken');
+      const response = await fetch('http://localhost:5000/api/users/favorites/toggle', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ providerId: service._id })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFavoriteIds(data.favorites);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  };
+
+  // --- INITIATE BOOKING ---
+  const handleInitiateBooking = async () => {
+    if (!currentUser) {
+      alert("Please log in or sign up to book a service.");
+      navigate('/login');
+      return;
+    }
+    if (!selectedDate || !selectedTime) {
+      alert("Please select both a date and a time for your appointment.");
+      return;
+    }
+
+    try {
+      setIsProcessingBooking(true);
+      const token = localStorage.getItem('serviceFinderToken');
+
+      const response = await fetch('http://localhost:5000/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          service: service.title || service.category || 'Service',
+          provider: service.name || service.provider,
+          providerId: service._id, 
+          date: selectedDate,
+          time: selectedTime,
+          price: service.price, 
+          image: service.image
+        })
+      });
+
+      if (response.ok) {
+        alert("Booking request sent! The professional will confirm it shortly and you will pay after the service is completed.");
+        navigate('/dashboard'); 
+      } else {
+        alert("Failed to create booking request.");
+      }
+    } catch (error) {
+      alert("A server error occurred while sending the request.");
+    } finally {
+      setIsProcessingBooking(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0f1117]">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !service) {
+    return (
+      <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0f1117]">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+           <span className="material-symbols-outlined text-6xl text-slate-400 mb-4">error</span>
+           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Oops! {error}</h2>
+           <Link to="/services" className="text-primary font-bold hover:underline">Browse other services</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark">
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0f1117] font-display">
       <Navbar />
       
       <main className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">
         
-        {/* Breadcrumb */}
         <nav className="flex text-sm text-slate-500 mb-6">
-          <a href="/" className="hover:text-primary">Home</a>
+          <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <span className="mx-2">/</span>
-          <a href="/services" className="hover:text-primary">Electricians</a>
+          <Link to="/services" className="hover:text-primary transition-colors">{service.category || 'Services'}</Link>
           <span className="mx-2">/</span>
-          <span className="text-slate-900 dark:text-white font-medium">{provider.name}</span>
+          <span className="text-slate-900 dark:text-white font-bold">{service.name || service.provider}</span>
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT COLUMN: Provider Details */}
           <div className="lg:col-span-2 space-y-8">
-            
-            {/* Profile Header */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-6 items-start">
+            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row gap-8 items-start relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              
               <img 
-                src={provider.image} 
-                alt={provider.name} 
-                className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover"
+                src={service.image || "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=600"} 
+                alt={service.name} 
+                className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover shadow-md z-10"
               />
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
+              <div className="flex-1 z-10 w-full">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                   <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{provider.name}</h1>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium">{provider.title}</p>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">{service.name || service.provider}</h1>
+                    <p className="text-primary font-bold mt-1 text-lg">{service.title || service.category}</p>
                   </div>
-                  <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100">
+                  <div className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-xl border border-yellow-200 dark:border-yellow-700/50 shadow-sm">
                     <span className="material-symbols-outlined text-yellow-500 text-[20px]" style={{fontVariationSettings: "'FILL' 1"}}>star</span>
-                    <span className="font-bold text-slate-900">{provider.rating}</span>
-                    <span className="text-xs text-slate-500">({provider.reviews} reviews)</span>
+                    <span className="font-black text-slate-900 dark:text-yellow-500">{service.rating || 'New'}</span>
                   </div>
                 </div>
                 
-                <div className="mt-4 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[18px]">location_on</span>
-                    {provider.location}
+                <div className="mt-6 flex flex-wrap items-center gap-y-3 gap-x-6 text-sm font-semibold text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-slate-400">location_on</span>
+                    {service.location || 'Local Professional'}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[18px]">verified</span>
-                    Background Checked
+
+                  {/* --- THE NEW PHONE UI --- */}
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-primary">call</span>
+                    <span className="text-slate-900 dark:text-white font-bold">{service.phone || "Number Hidden"}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-green-500">verified</span>
+                    <span className="text-green-600 dark:text-green-400">Background Checked</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* About Section */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">About {provider.name}</h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                {provider.about}
+            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-800">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">info</span>
+                About this Service
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                {service.about || "This professional offers top-tier services in their field. They are highly rated by past customers and committed to providing excellent and reliable solutions for your needs."}
               </p>
             </div>
 
-            {/* Services List */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Services Offered</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {provider.services.map((service, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50">
-                    <div className="size-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                      <span className="material-symbols-outlined text-[18px]">check</span>
-                    </div>
-                    <span className="text-slate-700 dark:text-slate-200 font-medium">{service}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Reviews Preview */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Customer Reviews</h2>
+            <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Customer Reviews</h2>
               <div className="space-y-6">
-                {[
-                  { user: "Rahul K.", date: "2 days ago", text: "Excellent work! Arrived on time and fixed the issue quickly.", rating: 5 },
-                  { user: "Priya S.", date: "1 week ago", text: "Very professional and polite. Explained everything clearly.", rating: 5 }
-                ].map((review, idx) => (
-                  <div key={idx} className="border-b border-slate-100 dark:border-slate-700 last:border-0 pb-6 last:pb-0">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-bold text-slate-900 dark:text-white">{review.user}</h4>
-                      <span className="text-xs text-slate-500">{review.date}</span>
+                {reviews.length > 0 ? (
+                  reviews.map((review) => (
+                    <div key={review._id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="size-10 bg-primary/10 text-primary font-bold flex items-center justify-center rounded-full">
+                            {review.customerName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white">{review.customerName}</h4>
+                            <p className="text-xs text-slate-500">{new Date(review.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex text-yellow-400">
+                          {[...Array(5)].map((_, i) => (
+                            <span 
+                              key={i} 
+                              className={`material-symbols-outlined text-[18px] ${i < review.rating ? 'font-variation-settings-["FILL",1]' : 'text-slate-300 dark:text-slate-700'}`}
+                              style={i < review.rating ? { fontVariationSettings: "'FILL' 1" } : {}}
+                            >
+                              star
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">"{review.text}"</p>
                     </div>
-                    <div className="flex text-yellow-500 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className="material-symbols-outlined text-[16px]" style={{fontVariationSettings: "'FILL' 1"}}>star</span>
-                      ))}
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-300 text-sm">{review.text}</p>
+                  ))
+                ) : (
+                  <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                    <p className="text-slate-500 font-medium">No reviews yet. Book this service to be the first!</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
-
           </div>
 
-          {/* RIGHT COLUMN: Booking Widget (Sticky) */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
-              <div className="flex justify-between items-center mb-6">
-                <span className="text-slate-500 dark:text-slate-400">Price per hour</span>
-                <span className="text-2xl font-black text-slate-900 dark:text-white">₹{provider.price}</span>
+            <div className="sticky top-24 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-200/60 dark:border-slate-800">
+              <div className="flex justify-between items-end mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 font-bold">Estimated Rate</span>
+                <div className="text-right">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white">₹{service.price}</span>
+                  <span className="text-slate-500 text-sm ml-1">/ hr</span>
+                </div>
               </div>
 
-              {/* Date Selection */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Select Date</label>
-                <input 
-                  type="date" 
-                  className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent dark:text-white focus:ring-2 focus:ring-primary"
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </div>
-
-              {/* Time Selection */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Select Time</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {["09:00", "11:00", "14:00", "16:00", "18:00"].map((time) => (
+                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-3">1. Select Date</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400">calendar_today</span>
+                  <input 
+                    type="date" 
+                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all cursor-pointer"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+            {/* REPLACE THE OLD TIME ARRAY WITH THIS EXPANDED ONE */}
+            <div className="mb-8">
+                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-3">2. Select Time</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {["08:00 AM", "09:30 AM", "11:00 AM", "01:00 PM", "02:30 PM", "04:00 PM", "06:00 PM"].map((time) => (
                     <button 
                       key={time}
                       onClick={() => setSelectedTime(time)}
-                      className={`py-2 px-1 text-sm rounded-lg border transition-all ${
+                      className={`py-3 px-2 text-sm font-bold rounded-xl border-2 transition-all ${
                         selectedTime === time 
-                        ? 'bg-primary text-white border-primary' 
-                        : 'border-slate-300 dark:border-slate-600 hover:border-primary text-slate-700 dark:text-slate-300'
+                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-primary/50'
                       }`}
                     >
                       {time}
@@ -165,25 +337,37 @@ const ServiceDetails = () => {
                 </div>
               </div>
 
-              {/* Summary */}
-              {selectedDate && selectedTime && (
-                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg mb-6 text-sm">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-slate-500">Date</span>
-                    <span className="font-bold dark:text-white">{selectedDate}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Time</span>
-                    <span className="font-bold dark:text-white">{selectedTime}</span>
-                  </div>
-                </div>
-              )}
-
-              <button className="w-full py-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-primary dark:hover:bg-slate-200 transition-colors shadow-lg shadow-primary/20">
-                Book Appointment
-              </button>
-              
-              <p className="text-xs text-center text-slate-400 mt-4">You won't be charged yet</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={toggleFavorite}
+                  className="px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-red-200 dark:hover:border-red-900/50 transition-colors flex items-center justify-center group"
+                  title="Save to favorites"
+                >
+                  <span 
+                    className={`material-symbols-outlined transition-transform group-hover:scale-110 ${favoriteIds.includes(service._id) ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`} 
+                    style={favoriteIds.includes(service._id) ? { fontVariationSettings: "'FILL' 1" } : {}}
+                  >
+                    favorite
+                  </span>
+                </button>
+                
+                <button 
+                  onClick={handleInitiateBooking}
+                  disabled={isProcessingBooking}
+                  className={`flex-1 py-4 rounded-xl font-bold transition-all flex justify-center items-center gap-2 text-lg ${
+                    isProcessingBooking 
+                      ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed' 
+                      : 'bg-primary text-white hover:bg-blue-600 shadow-xl shadow-primary/30 hover:shadow-primary/40 active:scale-[0.98]'
+                  }`}
+                >
+                  {isProcessingBooking ? (
+                    <><span className="material-symbols-outlined animate-spin">autorenew</span> Requesting...</>
+                  ) : (
+                    "Send Request"
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-center text-slate-500 mt-4 font-medium">You will only be charged after the service is completed.</p>
             </div>
           </div>
 

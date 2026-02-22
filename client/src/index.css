@@ -4,6 +4,7 @@
 
 @layer base {
   body {
-    @apply font-sans antialiased bg-background-light text-slate-900 dark:bg-background-dark dark:text-white;
+    /* This creates the beautiful, buttery-smooth animation across the whole app */
+    @apply transition-colors duration-500 ease-in-out bg-slate-50 dark:bg-[#0f1117] text-slate-900 dark:text-white;
   }
 }

@@ -1,41 +1,108 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, signInWithGoogle } from '../firebase';
+import { useGoogleLogin } from '@react-oauth/google';
+import { useAuth } from '../context/AuthContext';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { currentUser, login } = useAuth(); 
+  
+  const [name, setName] = useState(''); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userType, setUserType] = useState('customer'); // State for toggle
+  const [userType, setUserType] = useState('customer');
 
+  // --- FIX 1: Update the automatic redirect hook ---
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'provider' && !currentUser.isProfileComplete) {
+        navigate('/complete-profile');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [currentUser, navigate]);
+
+  // --- MANUAL SIGNUP ---
   const handleSignup = async (e) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
     
     try {
-      // NOTE: In a real app, you would save 'userType' to the user's profile/database here
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          name: name || "User", 
+          email, 
+          password, 
+          role: userType 
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        login(data.user, data.token); 
+        
+        // --- FIX 2: Smart Navigation ---
+        if (data.user.role === 'provider' && !data.user.isProfileComplete) {
+          navigate('/complete-profile');
+        } else {
+          navigate('/dashboard');
+        }
+
+      } else {
+        alert(data.message || "Signup failed on server.");
+      }
     } catch (error) {
-      console.error(error);
-      alert("Signup failed: " + error.message);
+      console.error("Signup request failed:", error);
+      alert("Could not connect to the server.");
     }
   };
 
-  const handleGoogleSignup = async () => {
-    try {
-      await signInWithGoogle();
-      navigate('/dashboard');
-    } catch (error) {
-      console.error(error);
-      alert("Google Signup failed.");
-    }
-  };
+  // --- GOOGLE SIGNUP ---
+  const handleGoogleSignup = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/google', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenResponse.access_token}` 
+          },
+          body: JSON.stringify({ role: userType })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          login(data.user, data.token); 
+          
+          // --- FIX 3: Smart Navigation ---
+          if (data.user.role === 'provider' && !data.user.isProfileComplete) {
+            navigate('/complete-profile');
+          } else {
+            navigate('/dashboard');
+          }
+
+        } else {
+          alert(data.message || "Google Signup failed on server.");
+        }
+      } catch (error) {
+        console.error('Backend authentication failed:', error);
+        alert('Server error during Google Signup.');
+      }
+    },
+    onError: error => console.error('Google Signup Failed:', error)
+  });
 
   return (
     <div className="flex min-h-screen w-full flex-col lg:flex-row font-display">
@@ -49,7 +116,6 @@ const Signup = () => {
         </div>
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
         
-        {/* Back to Home Button (Desktop) */}
         <div className="absolute top-10 left-10 z-30">
           <Link to="/" className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white transition-colors bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-md shadow-sm">
             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -77,7 +143,6 @@ const Signup = () => {
       {/* Right Side: Signup Form */}
       <div className="relative flex flex-1 flex-col items-center justify-center bg-white dark:bg-background-dark px-4 py-12 sm:px-6 lg:px-20 xl:px-24">
         
-        {/* Back to Home Button (Mobile) */}
         <Link 
           to="/" 
           className="absolute top-6 left-6 lg:hidden flex items-center gap-2 px-4 py-2 text-sm font-bold transition-colors rounded-full backdrop-blur-md bg-white/80 dark:bg-background-dark/80 text-slate-900 dark:text-white shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -88,7 +153,6 @@ const Signup = () => {
 
         <div className="flex w-full max-w-sm flex-col gap-8 mt-16 lg:mt-0">
           
-           {/* Mobile Logo */}
            <Link to="/" className="lg:hidden flex items-center gap-2 text-[#111218] dark:text-white mb-4 w-fit">
             <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
               <span className="material-symbols-outlined">handyman</span>
@@ -105,7 +169,6 @@ const Signup = () => {
             </p>
           </div>
 
-          {/* User Type Toggle (Customer / Provider) */}
           <div className="grid grid-cols-2 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
             <button 
               type="button"
@@ -132,7 +195,27 @@ const Signup = () => {
           </div>
 
           <form className="flex flex-col gap-5" onSubmit={handleSignup}>
-            {/* Email Input */}
+            
+             <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-[#111218] dark:text-white" htmlFor="name">
+                Full Name
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span className="material-symbols-outlined text-gray-400 text-[20px]">person</span>
+                </div>
+                <input 
+                  className="block w-full rounded-lg border-0 py-3 pl-10 text-[#111218] shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-background-dark dark:ring-gray-700 dark:text-white sm:text-sm sm:leading-6" 
+                  id="name" 
+                  type="text" 
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-[#111218] dark:text-white" htmlFor="email">
                 Email address
@@ -153,7 +236,6 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Password Input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-[#111218] dark:text-white" htmlFor="password">
                 Password
@@ -174,7 +256,6 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Confirm Password Input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-[#111218] dark:text-white" htmlFor="confirmPassword">
                 Confirm Password
@@ -209,10 +290,9 @@ const Signup = () => {
             </div>
           </div>
 
-          {/* Social Login Buttons */}
           <div className="grid grid-cols-1 gap-3">
             <button 
-              onClick={handleGoogleSignup}
+              onClick={() => handleGoogleSignup()}
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-white dark:bg-gray-800 py-2.5 px-3 text-sm font-semibold text-[#111218] dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >

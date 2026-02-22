@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -12,22 +10,30 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for Firebase Auth changes
+  // Check for saved user session on page load
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setLoading(false);
-    });
-
-    return unsubscribe;
+    const storedUser = localStorage.getItem('serviceFinderUser');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
   }, []);
 
+  const login = (userData, token) => {
+    setCurrentUser(userData);
+    localStorage.setItem('serviceFinderUser', JSON.stringify(userData));
+    localStorage.setItem('serviceFinderToken', token); // <--- This saves the token!
+  };
+  
+  // Custom logout function to clear user state
   const logout = () => {
-    return signOut(auth);
+    setCurrentUser(null);
+    localStorage.removeItem('serviceFinderUser');
   };
 
   const value = {
     currentUser,
+    login,
     logout
   };
 
