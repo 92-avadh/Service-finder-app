@@ -5,14 +5,16 @@ const bookingSchema = new mongoose.Schema({
   provider: { type: String, required: true },
   providerId: { type: String }, 
   customerEmail: { type: String, required: true },
+  
+  // NEW: Store the customer's address for the job
+  address: { type: String, required: true },
+  
   date: { type: String, required: true },
   time: { type: String, required: true },
   price: { type: String, required: true }, 
   image: { type: String },
   
-  // NEW: Store the 4-digit OTP
   startOtp: { type: String },
-  
   status: { type: String, default: 'Pending' }, 
   finalPrice: { type: Number },
   paymentMethod: { type: String }

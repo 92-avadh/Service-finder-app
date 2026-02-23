@@ -83,7 +83,6 @@ const CustomerDashboard = () => {
     } catch (error) {}
   };
 
-  // --- SUBMIT RESCHEDULE ---
   const handleRescheduleSubmit = async (e) => {
     e.preventDefault();
     if(!newDate || !newTime) return alert("Please select both a new date and time.");
@@ -227,10 +226,20 @@ const CustomerDashboard = () => {
                             </div>
                           )}
 
-                          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600 dark:text-slate-400">
-                            <div className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px] text-primary">calendar_month</span>{booking.date}</div>
-                            <div className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px] text-primary">schedule</span>{booking.time}</div>
-                            <div className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px] text-primary">payments</span>{booking.finalPrice ? `₹${booking.finalPrice}` : booking.price}</div>
+                          <div className="mt-4 flex flex-col gap-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                              <div className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px] text-primary">calendar_month</span>{booking.date}</div>
+                              <div className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px] text-primary">schedule</span>{booking.time}</div>
+                              <div className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[18px] text-primary">payments</span>{booking.finalPrice ? `₹${booking.finalPrice}` : booking.price}</div>
+                            </div>
+                            
+                            {/* --- NEW: DISPLAY ADDRESS ON CARD --- */}
+                            {booking.address && (
+                              <div className="flex items-start gap-1.5 mt-1 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50 w-full">
+                                <span className="material-symbols-outlined text-[18px] text-red-500 shrink-0">location_on</span>
+                                <span className="text-slate-700 dark:text-slate-300 leading-tight text-sm">{booking.address}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         

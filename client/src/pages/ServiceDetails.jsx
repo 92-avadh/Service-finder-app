@@ -17,9 +17,11 @@ const ServiceDetails = () => {
   
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  // NEW: Address State
+  const [address, setAddress] = useState("");
+  
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
-  // --- FETCH SERVICE & REVIEWS ---
   useEffect(() => {
     const fetchServiceDetails = async () => {
       try {
@@ -66,7 +68,6 @@ const ServiceDetails = () => {
     }
   }, [id]);
 
-  // --- FETCH FAVORITES ---
   useEffect(() => {
     const fetchFavorites = async () => {
       if (!currentUser || currentUser.role !== 'customer') return;
@@ -79,14 +80,11 @@ const ServiceDetails = () => {
           const data = await response.json();
           setFavoriteIds(data.map(fav => fav._id));
         }
-      } catch (error) {
-        console.error("Error fetching favorites:", error);
-      }
+      } catch (error) { console.error("Error fetching favorites:", error); }
     };
     fetchFavorites();
   }, [currentUser]);
 
-  // --- TOGGLE FAVORITE ---
   const toggleFavorite = async () => {
     if (!currentUser) {
       alert("Please log in to save favorites.");
@@ -101,22 +99,16 @@ const ServiceDetails = () => {
       const token = localStorage.getItem('serviceFinderToken');
       const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites/toggle', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ providerId: service._id })
       });
       if (response.ok) {
         const data = await response.json();
         setFavoriteIds(data.favorites);
       }
-    } catch (error) {
-      console.error("Error toggling favorite:", error);
-    }
+    } catch (error) {}
   };
 
-  // --- INITIATE BOOKING ---
   const handleInitiateBooking = async () => {
     if (!currentUser) {
       alert("Please log in or sign up to book a service.");
@@ -125,6 +117,11 @@ const ServiceDetails = () => {
     }
     if (!selectedDate || !selectedTime) {
       alert("Please select both a date and a time for your appointment.");
+      return;
+    }
+    // FIX: Verify address is entered
+    if (!address.trim()) {
+      alert("Please provide your full address so the professional can reach you.");
       return;
     }
 
@@ -142,6 +139,7 @@ const ServiceDetails = () => {
           service: service.title || service.category || 'Service',
           provider: service.name || service.provider,
           providerId: service._id, 
+          address: address.trim(), // <--- NEW: Send Address
           date: selectedDate,
           time: selectedTime,
           price: service.price, 
@@ -150,7 +148,7 @@ const ServiceDetails = () => {
       });
 
       if (response.ok) {
-        alert("Booking request sent! The professional will confirm it shortly and you will pay after the service is completed.");
+        alert("Booking request sent! The professional will confirm it shortly.");
         navigate('/dashboard'); 
       } else {
         alert("Failed to create booking request.");
@@ -228,13 +226,10 @@ const ServiceDetails = () => {
                     <span className="material-symbols-outlined text-[20px] text-slate-400">location_on</span>
                     {service.location || 'Local Professional'}
                   </div>
-
-                  {/* --- THE NEW PHONE UI --- */}
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[20px] text-primary">call</span>
                     <span className="text-slate-900 dark:text-white font-bold">{service.phone || "Number Hidden"}</span>
                   </div>
-
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[20px] text-green-500">verified</span>
                     <span className="text-green-600 dark:text-green-400">Background Checked</span>
@@ -249,7 +244,7 @@ const ServiceDetails = () => {
                 About this Service
               </h2>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                {service.about || "This professional offers top-tier services in their field. They are highly rated by past customers and committed to providing excellent and reliable solutions for your needs."}
+                {service.about || "This professional offers top-tier services in their field."}
               </p>
             </div>
 
@@ -269,7 +264,6 @@ const ServiceDetails = () => {
                             <p className="text-xs text-slate-500">{new Date(review.createdAt).toLocaleDateString()}</p>
                           </div>
                         </div>
-                        
                         <div className="flex text-yellow-400">
                           {[...Array(5)].map((_, i) => (
                             <span 
@@ -317,8 +311,7 @@ const ServiceDetails = () => {
                 </div>
               </div>
 
-            {/* REPLACE THE OLD TIME ARRAY WITH THIS EXPANDED ONE */}
-            <div className="mb-8">
+              <div className="mb-6">
                 <label className="block text-sm font-bold text-slate-900 dark:text-white mb-3">2. Select Time</label>
                 <div className="grid grid-cols-2 gap-3">
                   {["08:00 AM", "09:30 AM", "11:00 AM", "01:00 PM", "02:30 PM", "04:00 PM", "06:00 PM"].map((time) => (
@@ -337,18 +330,29 @@ const ServiceDetails = () => {
                 </div>
               </div>
 
+              {/* --- NEW ADDRESS INPUT FIELD --- */}
+              <div className="mb-8">
+                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-3">3. Your Address</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 material-symbols-outlined text-slate-400">home</span>
+                  <textarea 
+                    rows="3"
+                    required
+                    placeholder="Enter full address so the professional can find you..."
+                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+
               <div className="flex gap-3">
                 <button 
                   onClick={toggleFavorite}
                   className="px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-red-200 dark:hover:border-red-900/50 transition-colors flex items-center justify-center group"
                   title="Save to favorites"
                 >
-                  <span 
-                    className={`material-symbols-outlined transition-transform group-hover:scale-110 ${favoriteIds.includes(service._id) ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`} 
-                    style={favoriteIds.includes(service._id) ? { fontVariationSettings: "'FILL' 1" } : {}}
-                  >
-                    favorite
-                  </span>
+                  <span className={`material-symbols-outlined transition-transform group-hover:scale-110 ${favoriteIds.includes(service._id) ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`} style={favoriteIds.includes(service._id) ? { fontVariationSettings: "'FILL' 1" } : {}}>favorite</span>
                 </button>
                 
                 <button 
@@ -362,9 +366,7 @@ const ServiceDetails = () => {
                 >
                   {isProcessingBooking ? (
                     <><span className="material-symbols-outlined animate-spin">autorenew</span> Requesting...</>
-                  ) : (
-                    "Send Request"
-                  )}
+                  ) : "Send Request"}
                 </button>
               </div>
               <p className="text-xs text-center text-slate-500 mt-4 font-medium">You will only be charged after the service is completed.</p>
