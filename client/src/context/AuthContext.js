@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check for saved user session on page load
   useEffect(() => {
-    const storedUser = localStorage.getItem('serviceFinderUser');
+    const storedUser = sessionStorage.getItem('serviceFinderUser');
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser));
     }
@@ -21,14 +21,15 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData, token) => {
     setCurrentUser(userData);
-    localStorage.setItem('serviceFinderUser', JSON.stringify(userData));
-    localStorage.setItem('serviceFinderToken', token); // <--- This saves the token!
+    sessionStorage.setItem('serviceFinderUser', JSON.stringify(userData));
+    sessionStorage.setItem('serviceFinderToken', token); 
   };
   
   // Custom logout function to clear user state
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('serviceFinderUser');
+    sessionStorage.removeItem('serviceFinderUser');
+    sessionStorage.removeItem('serviceFinderToken');
   };
 
   const value = {
