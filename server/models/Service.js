@@ -18,6 +18,10 @@ const serviceSchema = new mongoose.Schema(
     type: String,
     required: true
   },
+  unit: {               // <--- NEW UNIT FIELD
+    type: String,
+    default: "hr"
+  },
   rating: {
     type: Number,
     default: 4.5

@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   title: { type: String },
   serviceType: { type: String },
   price: { type: String },
+  unit: { type: String, default: 'hr' }, // <--- NEW UNIT FIELD
   location: { type: String },
   about: { type: String },
   experience: { type: String },

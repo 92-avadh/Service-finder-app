@@ -57,6 +57,7 @@ const ServiceDetails = () => {
         title: "Expert Residential Electrician",
         category: "Electrical",
         price: 499,
+        unit: "hr", // <--- Added unit for demo data
         image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=600",
         about: "I have over 10 years of experience in residential and commercial electrical systems.",
         location: "Mumbai, Maharashtra",
@@ -71,7 +72,6 @@ const ServiceDetails = () => {
     const fetchFavorites = async () => {
       if (!currentUser || currentUser.role !== 'customer') return;
       try {
-        // FIXED: Now uses sessionStorage
         const token = sessionStorage.getItem('serviceFinderToken');
         const response = await fetch('http://localhost:5000/api/users/favorites', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -96,7 +96,6 @@ const ServiceDetails = () => {
       return;
     }
     try {
-      // FIXED: Now uses sessionStorage
       const token = sessionStorage.getItem('serviceFinderToken');
       const response = await fetch('http://localhost:5000/api/users/favorites/toggle', {
         method: 'POST',
@@ -127,7 +126,6 @@ const ServiceDetails = () => {
 
     try {
       setIsProcessingBooking(true);
-      // FIXED: Now uses sessionStorage to get the active token
       const token = sessionStorage.getItem('serviceFinderToken');
 
       const response = await fetch('http://localhost:5000/api/bookings', {
@@ -295,7 +293,8 @@ const ServiceDetails = () => {
                 <span className="text-slate-500 dark:text-slate-400 font-bold">Estimated Rate</span>
                 <div className="text-right">
                   <span className="text-3xl font-black text-slate-900 dark:text-white">₹{service.price}</span>
-                  <span className="text-slate-500 text-sm ml-1">/ hr</span>
+                  {/* Updated dynamic unit rendering here */}
+                  <span className="text-slate-500 text-sm ml-1">/ {service.unit || 'hr'}</span>
                 </div>
               </div>
 
