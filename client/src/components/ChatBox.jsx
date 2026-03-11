@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
 
-// Connect to the backend socket server
 const socket = io('https://service-finder-app.onrender.com');
 
 const ChatBox = ({ booking, onClose }) => {
@@ -16,7 +15,6 @@ const ChatBox = ({ booking, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 1. Initial Data Load & Socket Connection
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -37,15 +35,12 @@ const ChatBox = ({ booking, onClose }) => {
 
     fetchMessages();
 
-    // Join the specific real-time room for this booking
     socket.emit('join_chat_room', String(booking._id));
 
-    // Listen for instant incoming messages
     socket.on('receive_message', (incomingMessage) => {
       setMessages((prevMessages) => [...prevMessages, incomingMessage]);
     });
 
-    // Cleanup listener when chat is closed
     return () => {
       socket.off('receive_message');
     };
@@ -55,7 +50,6 @@ const ChatBox = ({ booking, onClose }) => {
     scrollToBottom();
   }, [messages]);
 
-  // 2. Send Message
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -73,7 +67,7 @@ const ChatBox = ({ booking, onClose }) => {
         },
         body: JSON.stringify({
           bookingId: booking._id,
-          sender: currentUser.name || currentUser.email.split('@')[0], // FIX 1: ADDED MISSING SENDER FIELD!
+          senderName: currentUser.name || currentUser.email.split('@')[0], 
           text: textToSend
         })
       });
@@ -89,7 +83,7 @@ const ChatBox = ({ booking, onClose }) => {
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[90vh] border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
         
         {/* Chat Header */}
-        <div className="bg-primary p-4 flex justify-between items-center text-white shadow-md z-10">
+        <div className="bg-blue-600 p-4 flex justify-between items-center text-white shadow-md z-10">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
               {chatPartnerName.charAt(0).toUpperCase()}
@@ -105,7 +99,7 @@ const ChatBox = ({ booking, onClose }) => {
         </div>
 
         {/* Chat Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-[#0f1117] space-y-4">
           {isLoading ? (
             <div className="flex justify-center items-center h-full text-slate-400">Loading messages...</div>
           ) : messages.length === 0 ? (
@@ -115,15 +109,16 @@ const ChatBox = ({ booking, onClose }) => {
             </div>
           ) : (
             messages.map((msg, index) => {
-              // FIX 2: Correctly checking 'msg.sender' to align bubbles left or right
-              const isMe = msg.sender === currentUser.name || msg.sender === currentUser.email.split('@')[0];
+              // Resilient check: Handles both new schema (senderName) and old DB records (sender)
+              const msgSender = msg.senderName || msg.sender;
+              const isMe = msgSender === currentUser.name || msgSender === currentUser.email.split('@')[0];
               
               return (
                 <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[10px] text-slate-400 mb-1 px-1">{msg.sender}</span>
+                  <span className="text-[10px] text-slate-400 mb-1 px-1">{msgSender}</span>
                   <div className={`px-4 py-2.5 rounded-2xl max-w-[80%] text-sm ${
                     isMe 
-                      ? 'bg-primary text-white rounded-tr-sm shadow-sm' 
+                      ? 'bg-blue-600 text-white rounded-tr-sm shadow-sm' 
                       : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-tl-sm shadow-sm'
                   }`}>
                     {msg.text}
@@ -143,12 +138,12 @@ const ChatBox = ({ booking, onClose }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type your message..." 
-              className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary dark:text-white outline-none"
+              className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-600 dark:text-white outline-none"
             />
             <button 
               type="submit" 
               disabled={!newMessage.trim()}
-              className="bg-primary text-white size-10 rounded-full flex items-center justify-center hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="bg-blue-600 text-white size-10 rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               <span className="material-symbols-outlined text-[20px] ml-1">send</span>
             </button>
