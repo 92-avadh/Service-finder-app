@@ -36,7 +36,7 @@ const Signup = () => {
     
     setIsLoading(true);
     try {
-      const response = await fetch('https://service-finder-app.onrender.com/api/auth/signup', {
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -74,7 +74,7 @@ const Signup = () => {
     onSuccess: async (tokenResponse) => {
       setIsLoading(true);
       try {
-        const response = await fetch('https://service-finder-app.onrender.com/api/auth/google', {
+        const response = await fetch('http://localhost:5000/api/auth/google', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

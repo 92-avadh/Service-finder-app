@@ -10,7 +10,7 @@ const FavoritesTab = () => {
       setIsFetchingFavs(true);
       try {
         const token = sessionStorage.getItem('serviceFinderToken');
-        const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites', { headers: { 'Authorization': `Bearer ${token}` }});
+        const response = await fetch('http://localhost:5000/api/users/favorites', { headers: { 'Authorization': `Bearer ${token}` }});
         if (response.ok) setFavorites(await response.json());
       } catch (error) { console.error(error); } finally { setIsFetchingFavs(false); }
     };
@@ -20,7 +20,7 @@ const FavoritesTab = () => {
   const removeFavorite = async (providerId) => {
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites/toggle', {
+      const response = await fetch('http://localhost:5000/api/users/favorites/toggle', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ providerId })
       });
       if (response.ok) setFavorites(favorites.filter(fav => fav._id !== providerId));

@@ -39,7 +39,7 @@ const CustomerDashboard = () => {
     try {
       setIsLoading(true);
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings?email=${userEmail}`, {
+      const response = await fetch(`http://localhost:5000/api/bookings?email=${userEmail}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
       });
       if (response.ok) setBookings(await response.json() || []);
@@ -55,13 +55,23 @@ const CustomerDashboard = () => {
   useEffect(() => {
     if (!userEmail) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    const socket = io('https://service-finder-app.onrender.com');
-    socket.emit('join_dashboard', String(userEmail));
+    const socket = io('http://localhost:5000');
+        socket.emit('join_dashboard', String(userEmail));
+    
     socket.on('booking_status_updated', (updatedBooking) => {
       try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
       if (Notification.permission === 'granted') new Notification('Booking Update! 🔔', { body: `Your job status is now: ${updatedBooking.status}` });
       setBookings(prev => prev.map(b => b._id === updatedBooking._id ? updatedBooking : b));
     });
+
+    // --- ADDED: NEW CHAT NOTIFICATION LISTENER ---
+    socket.on('receive_notification', (notif) => {
+      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+      if (Notification.permission === 'granted') {
+        new Notification('New Message! 💬', { body: notif.text });
+      }
+    });
+
     return () => socket.disconnect();
   }, [userEmail]);
 
@@ -70,7 +80,7 @@ const CustomerDashboard = () => {
     if(!newDate || !newTime) return alert("Please select both a new date and time.");
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${rescheduleBooking._id}/reschedule`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/${rescheduleBooking._id}/reschedule`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ date: newDate, time: newTime })

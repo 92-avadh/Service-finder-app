@@ -8,7 +8,7 @@ const SettingsTab = ({ currentUser }) => {
     const updates = { name: formData.get('name'), phone: formData.get('phone') };
     
     try {
-      const res = await fetch('https://service-finder-app.onrender.com/api/users/profile', {
+      const res = await fetch('http://localhost:5000/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(updates)

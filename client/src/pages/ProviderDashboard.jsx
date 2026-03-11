@@ -39,7 +39,7 @@ const ProviderDashboard = () => {
     try {
       setIsLoading(true);
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/provider`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/provider`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache'}
       });
@@ -58,7 +58,7 @@ const ProviderDashboard = () => {
   useEffect(() => {
     if (!proId) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    const socket = io('https://service-finder-app.onrender.com');
+    const socket = io('http://localhost:5000');    
     socket.emit('join_dashboard', String(proId));
 
     socket.on('new_booking_request', (newBooking) => {
@@ -71,14 +71,22 @@ const ProviderDashboard = () => {
       setBookings(prev => prev.map(b => b._id === updatedBooking._id ? updatedBooking : b));
     });
 
+    // --- ADDED: NEW CHAT NOTIFICATION LISTENER ---
+    socket.on('receive_notification', (notif) => {
+      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+      if (Notification.permission === 'granted') {
+        new Notification('New Message! 💬', { body: notif.text });
+      }
+    });
+
     return () => socket.disconnect();
-  }, [proId]); 
+  }, [proId]);
 
   const handleStatusUpdate = async (bookingId, newStatus) => {
     setActionLoading({ id: bookingId, action: newStatus }); 
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${bookingId}/status`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/status`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: newStatus })
       });
       if (response.ok) {
@@ -94,7 +102,7 @@ const ProviderDashboard = () => {
     setIsVerifyingOtp(true); 
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${otpBooking._id}/start`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/${otpBooking._id}/start`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ otp: otpInput })
       });
       if (response.ok) {
@@ -114,7 +122,7 @@ const ProviderDashboard = () => {
     e.preventDefault();
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${billingBooking._id}/bill`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/${billingBooking._id}/bill`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ finalPrice: Number(finalAmount) })
       });
       if (response.ok) {
@@ -128,7 +136,7 @@ const ProviderDashboard = () => {
   const handleConfirmPayment = async (bookingId) => {
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/${bookingId}/confirm-payment`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/confirm-payment`, {
         method: 'PUT', headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

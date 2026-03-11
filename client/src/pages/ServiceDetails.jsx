@@ -25,14 +25,14 @@ const ServiceDetails = () => {
     const fetchServiceDetails = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`https://service-finder-app.onrender.com/api/services/${id}`);
+        const response = await fetch(`http://localhost:5000/api/services/${id}`);
         
         if (response.ok) {
           const data = await response.json();
           setService(data);
 
           if (data._id) {
-            const reviewsResponse = await fetch(`https://service-finder-app.onrender.com/api/reviews/provider/${data._id}`);
+            const reviewsResponse = await fetch(`http://localhost:5000/api/reviews/provider/${data._id}`);
             if (reviewsResponse.ok) {
               const reviewsData = await reviewsResponse.json();
               setReviews(reviewsData);
@@ -73,7 +73,7 @@ const ServiceDetails = () => {
       try {
         // FIXED: Now uses sessionStorage
         const token = sessionStorage.getItem('serviceFinderToken');
-        const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites', {
+        const response = await fetch('http://localhost:5000/api/users/favorites', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -98,7 +98,7 @@ const ServiceDetails = () => {
     try {
       // FIXED: Now uses sessionStorage
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites/toggle', {
+      const response = await fetch('http://localhost:5000/api/users/favorites/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ providerId: service._id })
@@ -130,7 +130,7 @@ const ServiceDetails = () => {
       // FIXED: Now uses sessionStorage to get the active token
       const token = sessionStorage.getItem('serviceFinderToken');
 
-      const response = await fetch('https://service-finder-app.onrender.com/api/bookings', {
+      const response = await fetch('http://localhost:5000/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

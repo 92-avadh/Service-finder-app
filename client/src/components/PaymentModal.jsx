@@ -37,7 +37,7 @@ const CheckoutForm = ({ clientSecret, bookingData, onSuccess, onClose }) => {
       // 2. Payment was successful! Now save the booking to the DB.
       try {
         const token = sessionStorage.getItem('serviceFinderToken');
-        const response = await fetch('https://service-finder-app.onrender.com/api/bookings', {
+        const response = await fetch('http://localhost:5000/api/bookings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

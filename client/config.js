@@ -1,2 +1,1 @@
-// client/src/config.js
-export const API_URL = "https://service-finder-app.onrender.com";
+export const API_URL = "http://localhost:5000";

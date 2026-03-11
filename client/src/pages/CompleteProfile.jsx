@@ -40,7 +40,7 @@ const CompleteProfile = () => {
 
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch('https://service-finder-app.onrender.com/api/users/profile', {
+      const response = await fetch('http://localhost:5000/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...formData, isProfileComplete: true })
@@ -68,7 +68,7 @@ const CompleteProfile = () => {
 
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      const response = await fetch('https://service-finder-app.onrender.com/api/auth/delete-account', {
+      const response = await fetch('http://localhost:5000/api/auth/delete-account', {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

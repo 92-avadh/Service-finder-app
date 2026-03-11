@@ -19,18 +19,10 @@ router.get('/:bookingId', verifyToken, async (req, res) => {
 // Send a new message
 router.post('/', verifyToken, async (req, res) => {
   try {
-    // We accept both sender and senderName to prevent breaking anything
     const { bookingId, senderName, sender, text } = req.body;
-    
-    // Identify the sender's details securely from the Token
     const actualSenderId = req.user.id || req.user._id; 
     const actualSenderName = senderName || sender || req.user.name || req.user.email.split('@')[0];
 
-    if (!actualSenderId) {
-        return res.status(400).json({ message: "Authentication error: User ID missing." });
-    }
-
-    // FIX: Match the exact schema defined in Message.js
     const newMessage = new Message({ 
         bookingId, 
         senderId: actualSenderId, 
@@ -40,7 +32,7 @@ router.post('/', verifyToken, async (req, res) => {
     
     const savedMessage = await newMessage.save();
 
-    // 1. Emit to the active Chat Box (This makes it appear for both users instantly)
+    // 1. Emit to the active Chat Box
     if (req.io) {
       req.io.to(bookingId).emit('receive_message', savedMessage);
     }
@@ -50,23 +42,33 @@ router.post('/', verifyToken, async (req, res) => {
       const booking = await Booking.findById(bookingId);
       if (booking) {
          let receiverId = null;
+         let receiverRoom = null; // Track the exact socket room string
          
+         // If sender is Customer -> Ping Provider
          if (req.user.email === booking.customerEmail) {
-             receiverId = booking.providerId; // Customer -> Provider
-         } else {
+             receiverId = booking.providerId; 
+             receiverRoom = booking.providerId.toString(); // Provider joined via ID
+         } 
+         // If sender is Provider -> Ping Customer
+         else {
              const customer = await User.findOne({ email: booking.customerEmail });
-             if (customer) receiverId = customer._id; // Provider -> Customer
+             if (customer) {
+                 receiverId = customer._id; 
+                 receiverRoom = customer.email; // Customer joined via Email
+             }
          }
 
-         if (receiverId) {
+         // Send the notification to the specific room
+         if (receiverId && receiverRoom) {
              const notif = new Notification({
                  userId: receiverId,
                  text: `New message from ${actualSenderName}: ${text.length > 25 ? text.substring(0, 25) + '...' : text}`,
                  type: 'message'
              });
              await notif.save();
+             
              if (req.io) {
-                 req.io.to(receiverId.toString()).emit('receive_notification', notif);
+                 req.io.to(receiverRoom).emit('receive_notification', notif);
              }
          }
       }

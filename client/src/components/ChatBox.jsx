@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
 
-const socket = io('https://service-finder-app.onrender.com');
-
+const socket = io('http://localhost:5000');
 const ChatBox = ({ booking, onClose }) => {
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState([]);
@@ -19,7 +18,7 @@ const ChatBox = ({ booking, onClose }) => {
     const fetchMessages = async () => {
       try {
         const token = sessionStorage.getItem('serviceFinderToken');
-        const response = await fetch(`https://service-finder-app.onrender.com/api/chat/${booking._id}`, {
+        const response = await fetch(`http://localhost:5000/api/chat/${booking._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -59,7 +58,7 @@ const ChatBox = ({ booking, onClose }) => {
 
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
-      await fetch('https://service-finder-app.onrender.com/api/chat', {
+      const response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,8 +70,13 @@ const ChatBox = ({ booking, onClose }) => {
           text: textToSend
         })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server rejected message:", errorData);
+      }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Network error sending message:", error);
     }
   };
 
