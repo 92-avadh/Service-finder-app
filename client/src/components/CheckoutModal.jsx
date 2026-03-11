@@ -15,7 +15,7 @@ const CardForm = ({ booking, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const token = localStorage.getItem('serviceFinderToken');
+    const token = sessionStorage.getItem('serviceFinderToken');
     
     try {
       // 1. Ask backend for the secret intent
@@ -70,7 +70,7 @@ const CheckoutModal = ({ booking, onClose, onSuccess }) => {
   const handleCOD = async () => {
     setIsProcessingCOD(true);
     try {
-      const token = localStorage.getItem('serviceFinderToken');
+      const token = sessionStorage.getItem('serviceFinderToken');
       const res = await fetch(`https://service-finder-app.onrender.com/api/bookings/${booking._id}/pay`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

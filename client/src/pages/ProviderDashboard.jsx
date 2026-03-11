@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import ChatBox from '../components/ChatBox';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { io } from 'socket.io-client';
+import FullPageLoader from '../components/FullPageLoader'; // <-- NEW
 
 const ProviderDashboard = () => {
   const { currentUser } = useAuth();
@@ -13,6 +14,8 @@ const ProviderDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile Menu State
   const [bookings, setBookings] = useState([]);
   const [activeChatBooking, setActiveChatBooking] = useState(null);
+
+  const [isLoading, setIsLoading] = useState(true); // <-- NEW
 
   // Billing & OTP Modals
   const [billingBooking, setBillingBooking] = useState(null);
@@ -27,6 +30,7 @@ const ProviderDashboard = () => {
   const fetchProviderBookings = useCallback(async () => {
     if (!proId) return;
     try {
+      setIsLoading(true); // <-- NEW
       const token = localStorage.getItem('serviceFinderToken');
       const response = await fetch(`https://service-finder-app.onrender.com/api/bookings/provider`, {
         method: 'GET',
@@ -35,7 +39,12 @@ const ProviderDashboard = () => {
       if (response.ok) {
         setBookings(await response.json() || []);
       }
-    } catch (error) { console.error(error); } 
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      // <-- NEW: Set a short delay so the loader covers the UI fetch transition
+      setTimeout(() => setIsLoading(false), 800); 
+    }
   }, [proId]);
 
   useEffect(() => { fetchProviderBookings(); }, [fetchProviderBookings]);
@@ -155,6 +164,10 @@ const ProviderDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f1117] font-display transition-colors duration-300 relative">
+      
+      {/* --- NEW: LOADER OVERLAY --- */}
+      {isLoading && <FullPageLoader message="Loading Dashboard..." />}
+
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         

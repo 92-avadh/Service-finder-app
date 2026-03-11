@@ -6,6 +6,7 @@ import ChatBox from '../components/ChatBox';
 import ReviewModal from '../components/ReviewModal'; 
 import CheckoutModal from '../components/CheckoutModal'; 
 import { io } from 'socket.io-client'; 
+import FullPageLoader from '../components/FullPageLoader'; // <-- NEW
 
 const CustomerDashboard = () => {
   const { currentUser } = useAuth();
@@ -41,7 +42,12 @@ const CustomerDashboard = () => {
         headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
       });
       if (response.ok) setBookings(await response.json() || []);
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      // <-- NEW: Set a short delay so the loader is visible enough to cover the transition
+      setTimeout(() => setIsLoading(false), 800); 
+    }
   }, [userEmail]);
 
   useEffect(() => { fetchMyBookings(); }, [fetchMyBookings]);
@@ -119,6 +125,10 @@ const CustomerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f1117] font-display transition-colors duration-300 relative">
+      
+      {/* --- NEW: LOADER OVERLAY --- */}
+      {isLoading && <FullPageLoader message="Loading Dashboard..." />}
+
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -191,6 +201,7 @@ const CustomerDashboard = () => {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Kept existing skeleton loader here as fallback just in case data clears out without triggering page loader */}
                   {isLoading ? (
                     <div className="animate-pulse flex gap-5 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800">
                         <div className="w-full h-24 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>

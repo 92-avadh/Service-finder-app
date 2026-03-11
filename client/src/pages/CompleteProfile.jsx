@@ -39,7 +39,7 @@ const CompleteProfile = () => {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('serviceFinderToken');
+      const token = sessionStorage.getItem('serviceFinderToken');
       const response = await fetch('https://service-finder-app.onrender.com/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -67,7 +67,7 @@ const CompleteProfile = () => {
     if (!isConfirmed) return;
 
     try {
-      const token = localStorage.getItem('serviceFinderToken');
+      const token = sessionStorage.getItem('serviceFinderToken');
       const response = await fetch('https://service-finder-app.onrender.com/api/auth/delete-account', {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -75,8 +75,8 @@ const CompleteProfile = () => {
 
       if (response.ok) {
         if (logout) logout();
-        localStorage.removeItem('serviceFinderUser');
-        localStorage.removeItem('serviceFinderToken');
+        sessionStorage.removeItem('serviceFinderUser');
+        sessionStorage.removeItem('serviceFinderToken');
         navigate('/');
       } else {
         alert("Failed to cancel sign up. Please try again.");

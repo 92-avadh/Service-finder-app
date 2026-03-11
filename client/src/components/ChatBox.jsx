@@ -20,7 +20,7 @@ const ChatBox = ({ booking, onClose }) => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const token = localStorage.getItem('serviceFinderToken');
+        const token = sessionStorage.getItem('serviceFinderToken');
         const response = await fetch(`https://service-finder-app.onrender.com/api/chat/${booking._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -64,7 +64,7 @@ const ChatBox = ({ booking, onClose }) => {
     setNewMessage('');
 
     try {
-      const token = localStorage.getItem('serviceFinderToken');
+      const token = sessionStorage.getItem('serviceFinderToken');
       await fetch('https://service-finder-app.onrender.com/api/chat', {
         method: 'POST',
         headers: {

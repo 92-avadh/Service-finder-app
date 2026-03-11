@@ -48,7 +48,7 @@ const Navbar = () => {
     if (!currentUser) return;
     const fetchNotifications = async () => {
       try {
-        const token = localStorage.getItem('serviceFinderToken');
+        const token = sessionStorage.getItem('serviceFinderToken');
         const response = await fetch('https://service-finder-app.onrender.com/api/notifications', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -67,7 +67,7 @@ const Navbar = () => {
 
   const handleMarkAllRead = async () => {
     try {
-      const token = localStorage.getItem('serviceFinderToken');
+      const token = sessionStorage.getItem('serviceFinderToken');
       await fetch('https://service-finder-app.onrender.com/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (error) {}
@@ -76,8 +76,8 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       if (logout) await logout();
-      localStorage.removeItem('serviceFinderUser');
-      localStorage.removeItem('serviceFinderToken');
+      sessionStorage.removeItem('serviceFinderUser');
+      sessionStorage.removeItem('serviceFinderToken');
       navigate('/login');
     } catch (error) {}
   };

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
+import FullPageLoader from '../components/FullPageLoader'; // <-- NEW
 
 const Login = () => {
   const navigate = useNavigate();
-  // Bring in the login function that now accepts the token
   const { currentUser, login } = useAuth(); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('customer');
+  
+  const [isLoading, setIsLoading] = useState(false); // <-- NEW
 
   useEffect(() => {
     if (currentUser) {
@@ -20,6 +22,7 @@ const Login = () => {
   // --- GOOGLE LOGIN (Communicates with your server) ---
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
+      setIsLoading(true); // <-- NEW
       try {
         const response = await fetch('https://service-finder-app.onrender.com/api/auth/google', {
           method: 'POST',
@@ -33,13 +36,14 @@ const Login = () => {
         const data = await response.json();
 
         if (response.ok) {
-          // WE PASS THE TOKEN HERE
           login(data.user, data.token); 
           navigate('/dashboard');
         } else {
+          setIsLoading(false); // <-- NEW
           alert(data.message || "Google Login failed on server.");
         }
       } catch (error) {
+        setIsLoading(false); // <-- NEW
         console.error('Backend authentication failed:', error);
         alert('Server error during Google Login.');
       }
@@ -50,6 +54,7 @@ const Login = () => {
   // --- MANUAL LOGIN (Communicates with your server) ---
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // <-- NEW
     try {
       const response = await fetch('https://service-finder-app.onrender.com/api/auth/login', {
         method: 'POST',
@@ -62,13 +67,14 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // WE PASS THE TOKEN HERE
         login(data.user, data.token); 
         navigate('/dashboard');
       } else {
+        setIsLoading(false); // <-- NEW
         alert(data.message || "Invalid email or password.");
       }
     } catch (error) {
+      setIsLoading(false); // <-- NEW
       console.error("Login request failed:", error);
       alert("Could not connect to the server.");
     }
@@ -77,6 +83,9 @@ const Login = () => {
   return (
     <div className="flex min-h-screen w-full flex-col lg:flex-row font-display">
       
+      {/* --- NEW: LOADER OVERLAY --- */}
+      {isLoading && <FullPageLoader message="Authenticating..." />}
+
       {/* Left Side: Hero Image */}
       <div className="relative hidden lg:flex flex-1 flex-col justify-end bg-background-dark overflow-hidden p-12">
         <div 

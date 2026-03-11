@@ -12,7 +12,7 @@ const ReviewModal = ({ booking, onClose, onSuccess }) => {
 
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('serviceFinderToken');
+      const token = sessionStorage.getItem('serviceFinderToken');
       
       const response = await fetch('https://service-finder-app.onrender.com/api/reviews', {
         method: 'POST',

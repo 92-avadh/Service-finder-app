@@ -17,7 +17,6 @@ const ServiceDetails = () => {
   
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  // NEW: Address State
   const [address, setAddress] = useState("");
   
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
@@ -72,7 +71,8 @@ const ServiceDetails = () => {
     const fetchFavorites = async () => {
       if (!currentUser || currentUser.role !== 'customer') return;
       try {
-        const token = localStorage.getItem('serviceFinderToken');
+        // FIXED: Now uses sessionStorage
+        const token = sessionStorage.getItem('serviceFinderToken');
         const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -96,7 +96,8 @@ const ServiceDetails = () => {
       return;
     }
     try {
-      const token = localStorage.getItem('serviceFinderToken');
+      // FIXED: Now uses sessionStorage
+      const token = sessionStorage.getItem('serviceFinderToken');
       const response = await fetch('https://service-finder-app.onrender.com/api/users/favorites/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -119,7 +120,6 @@ const ServiceDetails = () => {
       alert("Please select both a date and a time for your appointment.");
       return;
     }
-    // FIX: Verify address is entered
     if (!address.trim()) {
       alert("Please provide your full address so the professional can reach you.");
       return;
@@ -127,7 +127,8 @@ const ServiceDetails = () => {
 
     try {
       setIsProcessingBooking(true);
-      const token = localStorage.getItem('serviceFinderToken');
+      // FIXED: Now uses sessionStorage to get the active token
+      const token = sessionStorage.getItem('serviceFinderToken');
 
       const response = await fetch('https://service-finder-app.onrender.com/api/bookings', {
         method: 'POST',
@@ -139,7 +140,7 @@ const ServiceDetails = () => {
           service: service.title || service.category || 'Service',
           provider: service.name || service.provider,
           providerId: service._id, 
-          address: address.trim(), // <--- NEW: Send Address
+          address: address.trim(), 
           date: selectedDate,
           time: selectedTime,
           price: service.price, 
@@ -330,7 +331,6 @@ const ServiceDetails = () => {
                 </div>
               </div>
 
-              {/* --- NEW ADDRESS INPUT FIELD --- */}
               <div className="mb-8">
                 <label className="block text-sm font-bold text-slate-900 dark:text-white mb-3">3. Your Address</label>
                 <div className="relative">
