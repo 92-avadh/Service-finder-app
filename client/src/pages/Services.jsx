@@ -134,8 +134,9 @@ const Services = () => {
                   <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-400 uppercase tracking-wider font-bold mb-0.5">Starting at</span>
-                      <div>
+                      <div className="flex items-baseline">
                         <span className="text-2xl font-black text-slate-900 dark:text-white">₹{service.price}</span>
+                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400 ml-1">/ {service.unit || 'hr'}</span>
                       </div>
                     </div>
                     

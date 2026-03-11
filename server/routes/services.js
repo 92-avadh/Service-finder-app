@@ -16,10 +16,11 @@ router.get('/featured', async (req, res) => {
       return {
         _id: provider._id,
         name: provider.name,
-        phone: provider.phone, // <--- ADDED PHONE
+        phone: provider.phone, 
         title: provider.title,
         category: provider.serviceType,
         price: provider.price,
+        unit: provider.unit, // <--- ADDED UNIT HERE
         location: provider.location,
         image: provider.image,
         rating: reviewCount > 0 ? parseFloat(averageRating) : 0, 
@@ -62,10 +63,11 @@ router.get('/', async (req, res) => {
       return {
         _id: provider._id,
         name: provider.name,
-        phone: provider.phone, // <--- ADDED PHONE
+        phone: provider.phone, 
         title: provider.title,
         category: provider.serviceType,
         price: provider.price,
+        unit: provider.unit, // <--- ADDED UNIT HERE
         location: provider.location,
         image: provider.image,
         about: provider.about,
@@ -94,10 +96,11 @@ router.get('/:id', async (req, res) => {
     const formattedService = {
       _id: provider._id,
       name: provider.name,
-      phone: provider.phone, // <--- ADDED PHONE
+      phone: provider.phone, 
       title: provider.title,
       category: provider.serviceType,
       price: provider.price,
+      unit: provider.unit, // <--- ADDED UNIT HERE
       location: provider.location,
       image: provider.image,
       about: provider.about,
