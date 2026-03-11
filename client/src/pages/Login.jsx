@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
-import FullPageLoader from '../components/FullPageLoader'; // <-- NEW
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,7 +10,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('customer');
   
-  const [isLoading, setIsLoading] = useState(false); // <-- NEW
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -19,10 +18,10 @@ const Login = () => {
     }
   }, [currentUser, navigate]);
 
-  // --- GOOGLE LOGIN (Communicates with your server) ---
+  // --- GOOGLE LOGIN ---
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      setIsLoading(true); // <-- NEW
+      setIsLoading(true);
       try {
         const response = await fetch('https://service-finder-app.onrender.com/api/auth/google', {
           method: 'POST',
@@ -39,11 +38,11 @@ const Login = () => {
           login(data.user, data.token); 
           navigate('/dashboard');
         } else {
-          setIsLoading(false); // <-- NEW
+          setIsLoading(false); 
           alert(data.message || "Google Login failed on server.");
         }
       } catch (error) {
-        setIsLoading(false); // <-- NEW
+        setIsLoading(false); 
         console.error('Backend authentication failed:', error);
         alert('Server error during Google Login.');
       }
@@ -51,10 +50,10 @@ const Login = () => {
     onError: error => console.error('Google Login Failed:', error)
   });
 
-  // --- MANUAL LOGIN (Communicates with your server) ---
+  // --- MANUAL LOGIN ---
   const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(true); // <-- NEW
+    setIsLoading(true);
     try {
       const response = await fetch('https://service-finder-app.onrender.com/api/auth/login', {
         method: 'POST',
@@ -70,11 +69,11 @@ const Login = () => {
         login(data.user, data.token); 
         navigate('/dashboard');
       } else {
-        setIsLoading(false); // <-- NEW
+        setIsLoading(false); 
         alert(data.message || "Invalid email or password.");
       }
     } catch (error) {
-      setIsLoading(false); // <-- NEW
+      setIsLoading(false); 
       console.error("Login request failed:", error);
       alert("Could not connect to the server.");
     }
@@ -83,9 +82,6 @@ const Login = () => {
   return (
     <div className="flex min-h-screen w-full flex-col lg:flex-row font-display">
       
-      {/* --- NEW: LOADER OVERLAY --- */}
-      {isLoading && <FullPageLoader message="Authenticating..." />}
-
       {/* Left Side: Hero Image */}
       <div className="relative hidden lg:flex flex-1 flex-col justify-end bg-background-dark overflow-hidden p-12">
         <div 
@@ -194,6 +190,7 @@ const Login = () => {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -219,12 +216,28 @@ const Login = () => {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
-            <button className="flex w-full items-center justify-center rounded-lg bg-primary py-3 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors" type="submit">
-              Sign in as {userType === 'customer' ? 'Customer' : 'Professional'}
+            {/* UPDATED BUTTON WITH INLINE LOADER */}
+            <button 
+              disabled={isLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed" 
+              type="submit"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Authenticating...
+                </>
+              ) : (
+                `Sign in as ${userType === 'customer' ? 'Customer' : 'Professional'}`
+              )}
             </button>
           </form>
 
@@ -239,9 +252,10 @@ const Login = () => {
 
           <div className="grid grid-cols-1 gap-3">
             <button 
+              disabled={isLoading}
               onClick={() => handleGoogleLogin()}
               type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-white dark:bg-gray-800 py-2.5 px-3 text-sm font-semibold text-[#111218] dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-white dark:bg-gray-800 py-2.5 px-3 text-sm font-semibold text-[#111218] dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="h-5 w-5" viewBox="0 0 48 48">
                 <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
