@@ -8,23 +8,22 @@ const PDFDocument = require('pdfkit');
 
 // --- HELPER TO GENERATE DB NOTIFICATIONS & REAL-TIME EVENTS ---
 const notifyUsers = async (req, booking) => {
-  if (req.io) {
-    if (booking.customerEmail) req.io.to(booking.customerEmail).emit('booking_status_updated', booking);
-    if (booking.providerId) req.io.to(booking.providerId.toString()).emit('booking_status_updated', booking);
-  }
-
   try {
-    if (booking.customerEmail) {
-      const customer = await User.findOne({ email: booking.customerEmail });
-      if (customer) {
-        const notif = new Notification({
-          userId: customer._id,
-          text: `Your booking for ${booking.service} is now ${booking.status}.`,
-          type: 'status'
-        });
-        await notif.save();
-        if (req.io) req.io.to(customer._id.toString()).emit('receive_notification', notif);
-      }
+    const customer = await User.findById(booking.customer);
+
+    if (req.io) {
+      if (customer && customer.email) req.io.to(customer.email).emit('booking_status_updated', booking);
+      if (booking.providerId) req.io.to(booking.providerId.toString()).emit('booking_status_updated', booking);
+    }
+
+    if (customer) {
+      const notif = new Notification({
+        userId: customer._id,
+        text: `Your booking for ${booking.service} is now ${booking.status}.`,
+        type: 'status'
+      });
+      await notif.save();
+      if (req.io) req.io.to(customer.email).emit('receive_notification', notif);
     }
 
     if (booking.status === 'Completed' && booking.providerId) {
@@ -51,7 +50,9 @@ router.get('/provider', verifyToken, async (req, res) => {
 // GET CUSTOMER BOOKINGS
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const bookings = await Booking.find({ customerEmail: req.user.email }).sort({ createdAt: -1 });
+    // FIXED: Match by customer ObjectId
+    const customerId = req.user.id || req.user._id;
+    const bookings = await Booking.find({ customer: customerId }).sort({ createdAt: -1 });
     res.status(200).json(bookings);
   } catch (error) { res.status(500).json({ message: "Error fetching bookings" }); }
 });
@@ -59,7 +60,12 @@ router.get('/', verifyToken, async (req, res) => {
 // INITIAL BOOKING CREATION
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const newBooking = new Booking({ ...req.body, customerEmail: req.user.email });
+    // FIXED: Explicitly attach the customer ID to pass MongoDB validation
+    const newBooking = new Booking({ 
+      ...req.body, 
+      customer: req.user.id || req.user._id 
+    });
+    
     const savedBooking = await newBooking.save();
     
     if (req.io && savedBooking.providerId) {
@@ -71,20 +77,30 @@ router.post('/', verifyToken, async (req, res) => {
       } catch(e) { console.error(e); }
     }
     res.status(201).json(savedBooking);
-  } catch (error) { res.status(500).json({ message: "Error creating booking" }); }
+  } catch (error) { 
+    console.error("Booking Creation Error:", error);
+    res.status(500).json({ message: "Error creating booking", error: error.message }); 
+  }
 });
 
-// 1. STANDARD STATUS UPDATE
+// 1. STANDARD STATUS UPDATE (FIXED OTP GENERATION)
 router.put('/:id/status', verifyToken, async (req, res) => {
   try {
     const { status } = req.body;
     let updateData = { status };
-    if (status === 'Confirmed') updateData.startOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Explicitly generate the OTP when status moves to Confirmed
+    if (status === 'Confirmed') {
+      updateData.startOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    }
 
     const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
     await notifyUsers(req, updatedBooking); 
     res.status(200).json(updatedBooking);
-  } catch (error) { res.status(500).json({ message: "Error updating status" }); }
+  } catch (error) { 
+    console.error("Status Update Error:", error);
+    res.status(500).json({ message: "Error updating status" }); 
+  }
 });
 
 // 2. VERIFY OTP
@@ -156,7 +172,7 @@ router.put('/:id/reschedule', verifyToken, async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Error rescheduling booking" }); }
 });
 
-// 7. DOWNLOAD INVOICE PDF (UPDATED WITH FALLBACK)
+// 7. DOWNLOAD INVOICE PDF (FIXED FALLBACK)
 router.get('/:id/invoice', verifyToken, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -180,7 +196,6 @@ router.get('/:id/invoice', verifyToken, async (req, res) => {
     doc.fontSize(16).font('Helvetica-Bold').text('Charges', { underline: true }).moveDown();
     doc.fontSize(12).font('Helvetica');
 
-    // --- FIXED: Fallback to original price if no itemized bill was generated ---
     let totalAmountToPay = booking.finalPrice || booking.price || 0;
 
     if (booking.invoiceItems && booking.invoiceItems.length > 0) {

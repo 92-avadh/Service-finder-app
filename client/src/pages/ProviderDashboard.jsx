@@ -35,10 +35,10 @@ const ProviderDashboard = () => {
   const userImage = currentUser?.image || currentUser?.photoURL || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
   const proId = currentUser?._id || currentUser?.id;
 
-  const fetchProviderBookings = useCallback(async () => {
+  const fetchProviderBookings = useCallback(async (silent = false) => {
     if (!proId) return; 
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const token = sessionStorage.getItem('serviceFinderToken');
       const response = await fetch(`http://localhost:5000/api/bookings/provider`, {
         method: 'GET',
@@ -50,22 +50,38 @@ const ProviderDashboard = () => {
     } catch (error) { 
       console.error(error); 
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [proId]);
 
   useEffect(() => { fetchProviderBookings(); }, [fetchProviderBookings]);
 
+  // --- FIXED SOCKET LOGIC ---
   useEffect(() => {
     if (!proId) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    
     const socket = io('http://localhost:5000');    
+    
+    // Join the room using the provider's ID
     socket.emit('join_dashboard', String(proId));
 
     socket.on('new_booking_request', (newBooking) => {
+      // Play sound and show notification
       try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
-      if (Notification.permission === 'granted') new Notification('New Job Request! 🚀', { body: `You have a new request for ${newBooking.service}!` });
-      setBookings(prev => [newBooking, ...prev]);
+      if (Notification.permission === 'granted') {
+        new Notification('New Job Request! 🚀', { body: `You have a new request for ${newBooking.service}!` });
+      }
+      
+      // Update state immediately without refreshing
+      setBookings(prev => {
+        // Prevent duplicates just in case
+        if (prev.some(b => b._id === newBooking._id)) return prev;
+        return [newBooking, ...prev];
+      });
+      
+      // Fallback: Silently fetch from DB to ensure data consistency
+      fetchProviderBookings(true);
     });
 
     socket.on('booking_status_updated', (updatedBooking) => {
@@ -77,10 +93,14 @@ const ProviderDashboard = () => {
       if (Notification.permission === 'granted') {
         new Notification('New Message! 💬', { body: notif.text });
       }
+      // If it's a notification about a new request, trigger a silent refresh
+      if (notif.text.includes("New booking request")) {
+        fetchProviderBookings(true);
+      }
     });
 
     return () => socket.disconnect();
-  }, [proId]);
+  }, [proId, fetchProviderBookings]);
 
   const handleStatusUpdate = async (bookingId, newStatus) => {
     setActionLoading({ id: bookingId, action: newStatus }); 

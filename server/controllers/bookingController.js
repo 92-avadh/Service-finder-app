@@ -6,7 +6,7 @@ exports.createBooking = async (req, res) => {
   try {
     const newBooking = new Booking({
       ...req.body,
-      customer: req.user.id // Assuming your auth middleware sets req.user
+      customer: req.user.id 
     });
     const savedBooking = await newBooking.save();
     res.status(201).json(savedBooking);
@@ -17,7 +17,6 @@ exports.createBooking = async (req, res) => {
 
 exports.getUserBookings = async (req, res) => {
   try {
-    // If user is a provider, fetch bookings where providerId matches. Else, match customer.
     const query = req.user.role === 'provider' 
       ? { providerId: req.user.id } 
       : { customer: req.user.id };
@@ -65,7 +64,6 @@ exports.submitItemizedBill = async (req, res) => {
     const { id } = req.params;
     const { invoiceItems } = req.body;
 
-    // Auto-calculate the total price on the backend
     const finalPrice = invoiceItems.reduce((total, item) => total + Number(item.amount), 0);
 
     const booking = await Booking.findByIdAndUpdate(
@@ -81,15 +79,12 @@ exports.submitItemizedBill = async (req, res) => {
   }
 };
 
-// 2. Customer downloads the PDF
+// 2. Customer downloads the PDF (FIXED FALLBACK)
 exports.downloadInvoicePDF = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-    if (!booking.invoiceItems || booking.invoiceItems.length === 0) {
-      return res.status(400).json({ message: "No invoice generated yet." });
-    }
 
     // Initialize PDF
     const doc = new PDFDocument({ margin: 50 });
@@ -111,19 +106,26 @@ exports.downloadInvoicePDF = async (req, res) => {
 
     doc.fontSize(16).font('Helvetica-Bold').text('Itemized Charges', { underline: true }).moveDown();
 
-    // Loop through items
+    let totalAmountToPay = booking.finalPrice || booking.price || 0;
+
+    // Loop through items or use fallback
     doc.fontSize(12).font('Helvetica');
-    booking.invoiceItems.forEach(item => {
-      doc.text(`${item.description}`, { continued: true });
-      doc.text(`₹${item.amount}`, { align: 'right' });
-    });
+    if (booking.invoiceItems && booking.invoiceItems.length > 0) {
+      booking.invoiceItems.forEach(item => {
+        doc.text(`${item.description}`, { continued: true });
+        doc.text(`₹${item.amount}`, { align: 'right' });
+      });
+    } else {
+        doc.text(`Standard Service Charge`, { continued: true });
+        doc.text(`₹${totalAmountToPay}`, { align: 'right' });
+    }
 
     doc.moveDown();
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(); // draw a line
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(); 
 
-    doc.fontSize(18).font('Helvetica-Bold').text(`Total Amount: ₹${booking.finalPrice}`, { align: 'right' });
+    doc.fontSize(18).font('Helvetica-Bold').text(`Total Amount: ₹${totalAmountToPay}`, { align: 'right' });
 
-    if(booking.status === 'Paid') {
+    if(booking.status === 'Paid' || booking.status === 'Completed') {
         doc.moveDown().fillColor('green').text('PAID IN FULL', { align: 'center' });
     }
 

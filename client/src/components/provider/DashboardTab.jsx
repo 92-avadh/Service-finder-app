@@ -3,13 +3,14 @@ import React from 'react';
 const DashboardTab = ({ 
   userName, bookings, filteredBookings, activeTab, setActiveTab, isLoading,
   handleStatusUpdate, actionLoading, setActiveChatBooking, setOtpBooking, 
-  setBillingBooking, handleConfirmPayment, parsePrice // <-- Removed setFinalAmount here
+  setBillingBooking, handleConfirmPayment, parsePrice
 }) => {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-teal-700 dark:to-teal-900 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome, {userName.split(' ')[0]}! 🚀</h1>
+          {/* FIXED: Added optional chaining to userName in case it's missing */}
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome, {userName?.split(' ')[0] || 'Professional'}! 🚀</h1>
           <p className="text-slate-300 dark:text-teal-100 text-sm">Review your new service requests and manage your schedule.</p>
         </div>
       </div>
@@ -47,7 +48,12 @@ const DashboardTab = ({
                 <div className="flex justify-between items-start mb-1">
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">{booking.service}</h3>
-                      <p className="text-slate-500 text-sm font-medium mt-1">Customer: <span className="text-slate-700 dark:text-slate-300">{booking.customerEmail.split('@')[0]}</span></p>
+                      {/* FIXED: Safely fallback to 'Customer' if customerEmail is missing from old test data */}
+                      <p className="text-slate-500 text-sm font-medium mt-1">
+                        Customer: <span className="text-slate-700 dark:text-slate-300">
+                          {booking.customerEmail ? booking.customerEmail.split('@')[0] : 'Customer'}
+                        </span>
+                      </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                       booking.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
@@ -114,7 +120,6 @@ const DashboardTab = ({
                     </button>
                   )}
 
-                  {/* --- FIXED: Removed setFinalAmount here --- */}
                   {booking.status === 'In Progress' && (
                     <button onClick={() => setBillingBooking(booking)} className="w-full px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold shadow-md shadow-teal-600/20 whitespace-nowrap">
                       Complete & Bill
