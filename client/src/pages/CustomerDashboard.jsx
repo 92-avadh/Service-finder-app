@@ -7,7 +7,6 @@ import CheckoutModal from '../components/CheckoutModal';
 import { io } from 'socket.io-client'; 
 import FullPageLoader from '../components/FullPageLoader'; 
 
-// Import Tabs
 import DashboardTab from '../components/customer/DashboardTab';
 import FavoritesTab from '../components/customer/FavoritesTab';
 import MessagesTab from '../components/customer/MessagesTab';
@@ -64,7 +63,6 @@ const CustomerDashboard = () => {
       setBookings(prev => prev.map(b => b._id === updatedBooking._id ? updatedBooking : b));
     });
 
-    // --- ADDED: NEW CHAT NOTIFICATION LISTENER ---
     socket.on('receive_notification', (notif) => {
       try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
       if (Notification.permission === 'granted') {
@@ -92,6 +90,31 @@ const CustomerDashboard = () => {
       }
     } catch (error) {
       alert("Failed to reschedule.");
+    }
+  };
+
+  // --- NEW PDF INVOICE DOWNLOAD HANDLER ---
+  const handleDownloadInvoice = async (bookingId) => {
+    try {
+      const token = sessionStorage.getItem('serviceFinderToken');
+      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/invoice`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error("Could not fetch PDF");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${bookingId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("Error downloading invoice.");
+      console.error(error);
     }
   };
 
@@ -165,6 +188,7 @@ const CustomerDashboard = () => {
                 setRescheduleBooking={setRescheduleBooking}
                 setNewDate={setNewDate}
                 setNewTime={setNewTime}
+                handleDownloadInvoice={handleDownloadInvoice} /* Passed to the tab to attach to buttons */
               />
             )}
             {activeNav === 'favorites' && <FavoritesTab />}
@@ -174,7 +198,6 @@ const CustomerDashboard = () => {
         </div>
       </div>
 
-      {/* --- MODALS RETAINED IN ROOT --- */}
       {rescheduleBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-8 shadow-2xl border border-slate-200 dark:border-slate-800">

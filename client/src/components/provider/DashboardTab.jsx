@@ -3,7 +3,7 @@ import React from 'react';
 const DashboardTab = ({ 
   userName, bookings, filteredBookings, activeTab, setActiveTab, isLoading,
   handleStatusUpdate, actionLoading, setActiveChatBooking, setOtpBooking, 
-  setBillingBooking, setFinalAmount, handleConfirmPayment, parsePrice 
+  setBillingBooking, handleConfirmPayment, parsePrice // <-- Removed setFinalAmount here
 }) => {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -114,8 +114,9 @@ const DashboardTab = ({
                     </button>
                   )}
 
+                  {/* --- FIXED: Removed setFinalAmount here --- */}
                   {booking.status === 'In Progress' && (
-                    <button onClick={() => { setBillingBooking(booking); setFinalAmount(parsePrice(booking.price)); }} className="w-full px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold shadow-md shadow-teal-600/20 whitespace-nowrap">
+                    <button onClick={() => setBillingBooking(booking)} className="w-full px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-bold shadow-md shadow-teal-600/20 whitespace-nowrap">
                       Complete & Bill
                     </button>
                   )}

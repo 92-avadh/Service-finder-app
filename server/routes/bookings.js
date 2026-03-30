@@ -1,21 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
-const Notification = require('../models/Notification'); // <-- NEW
-const User = require('../models/User'); // <-- NEW
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 const verifyToken = require('../middleware/authMiddleware');
+const PDFDocument = require('pdfkit'); // <-- IMPORT PDFKIT
 
 // --- HELPER TO GENERATE DB NOTIFICATIONS & REAL-TIME EVENTS ---
 const notifyUsers = async (req, booking) => {
-  // 1. Instantly update the Dashboards
   if (req.io) {
     if (booking.customerEmail) req.io.to(booking.customerEmail).emit('booking_status_updated', booking);
     if (booking.providerId) req.io.to(booking.providerId.toString()).emit('booking_status_updated', booking);
   }
 
-  // 2. Create Persistent Notifications for the Navbar Bell
   try {
-    // Notify the Customer about the status change
     if (booking.customerEmail) {
       const customer = await User.findOne({ email: booking.customerEmail });
       if (customer) {
@@ -29,7 +27,6 @@ const notifyUsers = async (req, booking) => {
       }
     }
 
-    // Notify the Provider when the job is finally completed/paid
     if (booking.status === 'Completed' && booking.providerId) {
       const notif = new Notification({
         userId: booking.providerId,
@@ -66,21 +63,13 @@ router.post('/', verifyToken, async (req, res) => {
     const savedBooking = await newBooking.save();
     
     if (req.io && savedBooking.providerId) {
-      // Update Pro Dashboard
       req.io.to(savedBooking.providerId.toString()).emit('new_booking_request', savedBooking);
-      
-      // Ping Pro Navbar Bell
       try {
-        const notif = new Notification({
-          userId: savedBooking.providerId,
-          text: `New booking request for ${savedBooking.service}!`,
-          type: 'status'
-        });
+        const notif = new Notification({ userId: savedBooking.providerId, text: `New booking request for ${savedBooking.service}!`, type: 'status' });
         await notif.save();
         req.io.to(savedBooking.providerId.toString()).emit('receive_notification', notif);
       } catch(e) { console.error(e); }
     }
-    
     res.status(201).json(savedBooking);
   } catch (error) { res.status(500).json({ message: "Error creating booking" }); }
 });
@@ -112,11 +101,19 @@ router.put('/:id/start', verifyToken, async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Error verifying OTP" }); }
 });
 
-// 3. SENDS BILL
+// 3. SENDS ITEMIZED BILL (UPDATED)
 router.put('/:id/bill', verifyToken, async (req, res) => {
   try {
-    const { finalPrice } = req.body;
-    const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, { status: 'Payment Pending', finalPrice: finalPrice }, { new: true });
+    const { invoiceItems } = req.body;
+    
+    // Calculate final price automatically
+    const finalPrice = invoiceItems.reduce((total, item) => total + Number(item.amount), 0);
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      req.params.id, 
+      { status: 'Payment Pending', invoiceItems: invoiceItems, finalPrice: finalPrice }, 
+      { new: true }
+    );
     await notifyUsers(req, updatedBooking); 
     res.status(200).json(updatedBooking);
   } catch (error) { res.status(500).json({ message: "Error sending bill" }); }
@@ -148,14 +145,9 @@ router.put('/:id/reschedule', verifyToken, async (req, res) => {
     const { date, time } = req.body;
     const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, { date, time, status: 'Pending' }, { new: true });
     
-    // Notify the Provider that the customer requested a reschedule
     if (updatedBooking.providerId) {
       try {
-        const notif = new Notification({
-          userId: updatedBooking.providerId,
-          text: `Customer rescheduled ${updatedBooking.service} to ${date} at ${time}.`,
-          type: 'status'
-        });
+        const notif = new Notification({ userId: updatedBooking.providerId, text: `Customer rescheduled ${updatedBooking.service} to ${date} at ${time}.`, type: 'status' });
         await notif.save();
         if (req.io) req.io.to(updatedBooking.providerId.toString()).emit('receive_notification', notif);
       } catch(e) {}
@@ -164,6 +156,54 @@ router.put('/:id/reschedule', verifyToken, async (req, res) => {
     await notifyUsers(req, updatedBooking); 
     res.status(200).json(updatedBooking);
   } catch (error) { res.status(500).json({ message: "Error rescheduling booking" }); }
+});
+
+// 7. DOWNLOAD INVOICE PDF (NEW)
+router.get('/:id/invoice', verifyToken, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking.invoiceItems || booking.invoiceItems.length === 0) {
+      return res.status(400).json({ message: "No invoice generated yet." });
+    }
+
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-disposition', `attachment; filename="Invoice-${booking._id}.pdf"`);
+    res.setHeader('Content-type', 'application/pdf');
+    doc.pipe(res);
+
+    // Build PDF Content
+    doc.fontSize(24).font('Helvetica-Bold').text('INVOICE', { align: 'center' }).moveDown();
+    
+    doc.fontSize(12).font('Helvetica');
+    doc.text(`Booking ID: ${booking._id}`);
+    doc.text(`Date of Service: ${new Date(booking.date).toLocaleDateString()}`);
+    doc.text(`Service: ${booking.service}`);
+    doc.text(`Professional: ${booking.provider}`);
+    doc.moveDown(2);
+
+    doc.fontSize(16).font('Helvetica-Bold').text('Itemized Charges', { underline: true }).moveDown();
+
+    doc.fontSize(12).font('Helvetica');
+    booking.invoiceItems.forEach(item => {
+      doc.text(`${item.description}`, { continued: true });
+      doc.text(`Rs. ${item.amount}`, { align: 'right' });
+    });
+
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(); 
+
+    doc.fontSize(18).font('Helvetica-Bold').text(`Total Amount: Rs. ${booking.finalPrice}`, { align: 'right' });
+
+    if(booking.status === 'Completed' || booking.status === 'Paid') {
+        doc.moveDown(2).fillColor('green').fontSize(20).text('PAID IN FULL', { align: 'center' });
+    }
+
+    doc.end();
+
+  } catch (error) {
+    res.status(500).json({ message: "Error generating PDF" });
+  }
 });
 
 module.exports = router;

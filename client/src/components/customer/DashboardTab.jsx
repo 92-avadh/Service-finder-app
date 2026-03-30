@@ -2,13 +2,22 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const DashboardTab = ({ 
-  userName, activeTab, setActiveTab, bookings, isLoading, 
-  setActiveChatBooking, setActivePaymentBooking, setActiveReviewBooking, 
-  setRescheduleBooking, setNewDate, setNewTime 
+  userName, 
+  activeTab, 
+  setActiveTab, 
+  bookings = [], // Added default empty array just in case
+  isLoading, 
+  setActiveChatBooking, 
+  setActivePaymentBooking, 
+  setActiveReviewBooking, 
+  setRescheduleBooking, 
+  setNewDate, 
+  setNewTime,
+  handleDownloadInvoice 
 }) => {
   const filteredBookings = bookings.filter(booking => {
     if (activeTab === 'upcoming') return ['Confirmed', 'Pending', 'In Progress', 'Payment Pending', 'Payment Verification'].includes(booking.status || 'Pending');
-    if (activeTab === 'completed') return ['Completed', 'Cancelled'].includes(booking.status);
+    if (activeTab === 'completed') return ['Completed', 'Cancelled', 'Paid'].includes(booking.status);
     return true;
   });
 
@@ -17,7 +26,7 @@ const DashboardTab = ({
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-primary dark:to-blue-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome back, {userName.split(' ')[0]}! 👋</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome back, {userName?.split(' ')[0]}! 👋</h1>
           <p className="text-slate-300 dark:text-blue-100 text-sm">Ready to check off your to-do list? Manage your appointments here.</p>
         </div>
         <Link to="/services" className="relative z-10 w-full sm:w-auto">
@@ -84,7 +93,8 @@ const DashboardTab = ({
                 </div>
               </div>
               
-              <div className="flex flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-5 justify-center">
+              <div className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0 border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-5 justify-center">
+                  
                   {['Confirmed', 'In Progress', 'Payment Pending', 'Payment Verification'].includes(booking.status) && (
                     <button onClick={() => setActiveChatBooking(booking)} className="w-full px-4 py-2.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-xl text-sm font-bold hover:bg-blue-200 transition-colors flex items-center justify-center gap-1">
                       <span className="material-symbols-outlined text-[18px]">chat</span> Message Pro
@@ -103,9 +113,19 @@ const DashboardTab = ({
                     </span>
                   )}
 
+                  {/* --- FIXED: Safe check for invoiceItems --- */}
+                  {booking.status === 'Completed' && booking.invoiceItems && booking.invoiceItems.length > 0 && (
+                    <button 
+                      onClick={() => handleDownloadInvoice(booking._id || booking.id)} 
+                      className="w-full px-4 py-2.5 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">download</span> Invoice
+                    </button>
+                  )}
+
                   {booking.status === 'Completed' && (
                     <button onClick={() => setActiveReviewBooking(booking)} className="w-full px-4 py-2.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500 rounded-xl text-sm font-bold hover:bg-yellow-200 transition-colors flex items-center justify-center gap-1">
-                      <span className="material-symbols-outlined text-[18px]">star</span> Leave a Review
+                      <span className="material-symbols-outlined text-[18px]">star</span> Leave Review
                     </button>
                   )}
                   

@@ -1,67 +1,135 @@
 const Booking = require('../models/Booking');
-const User = require('../models/User');
-const Message = require('../models/Message'); // Need this to delete chats
-const Notification = require('../models/Notification'); // Need this for alerts
+const PDFDocument = require('pdfkit');
 
-const getMyBookings = async (req, res) => {
+// Standard Booking Functions
+exports.createBooking = async (req, res) => {
   try {
-    const bookings = await Booking.find({ customerEmail: req.user.email }).sort({ createdAt: -1 });
-    res.status(200).json(bookings);
-  } catch (error) { res.status(500).json({ message: 'Server error' }); }
+    const newBooking = new Booking({
+      ...req.body,
+      customer: req.user.id // Assuming your auth middleware sets req.user
+    });
+    const savedBooking = await newBooking.save();
+    res.status(201).json(savedBooking);
+  } catch (error) {
+    res.status(500).json({ message: "Error creating booking", error: error.message });
+  }
 };
 
-const getProviderBookings = async (req, res) => {
+exports.getUserBookings = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    const bookings = await Booking.find({ provider: user.name }).sort({ createdAt: -1 });
-    res.status(200).json(bookings);
-  } catch (error) { res.status(500).json({ message: 'Server error' }); }
+    // If user is a provider, fetch bookings where providerId matches. Else, match customer.
+    const query = req.user.role === 'provider' 
+      ? { providerId: req.user.id } 
+      : { customer: req.user.id };
+      
+    const bookings = await Booking.find(query).sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching bookings", error: error.message });
+  }
 };
 
-const createBooking = async (req, res) => {
+exports.updateBookingStatus = async (req, res) => {
   try {
-    const { service, provider, date, time, price, image } = req.body;
-    const customerEmail = req.user.email; 
-
-    const newBooking = new Booking({ customerEmail, service, provider, date, time, price, image, status: 'Pending' });
-    await newBooking.save();
-
-    // --- REAL-TIME NOTIFICATION FOR PROVIDER ---
-    const providerUser = await User.findOne({ name: provider, role: 'provider' });
-    if (providerUser) {
-      const notif = new Notification({ userId: providerUser._id, text: `New booking request: ${service}`, type: 'booking' });
-      await notif.save();
-      req.app.get('io').to(providerUser._id.toString()).emit('receive_notification', notif);
-    }
-
-    res.status(201).json({ message: 'Booking created', booking: newBooking });
-  } catch (error) { res.status(500).json({ message: 'Failed to create booking' }); }
+    const { status } = req.body;
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id, 
+      { status }, 
+      { new: true }
+    );
+    res.json(booking);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating status", error: error.message });
+  }
 };
 
-const updateBookingStatus = async (req, res) => {
+exports.payBooking = async (req, res) => {
+  try {
+    const { paymentMethod } = req.body;
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      { status: 'Paid', paymentMethod },
+      { new: true }
+    );
+    res.json(booking);
+  } catch (error) {
+    res.status(500).json({ message: "Error processing payment", error: error.message });
+  }
+};
+
+// --- NEW INVOICE FUNCTIONS ---
+
+// 1. Provider submits the itemized bill
+exports.submitItemizedBill = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { invoiceItems } = req.body;
 
-    const updatedBooking = await Booking.findByIdAndUpdate(id, { status }, { new: true });
-    if (!updatedBooking) return res.status(404).json({ message: 'Booking not found' });
+    // Auto-calculate the total price on the backend
+    const finalPrice = invoiceItems.reduce((total, item) => total + Number(item.amount), 0);
 
-    // --- AUTO-DELETE CHAT IF COMPLETED ---
-    if (status === 'Completed') {
-      await Message.deleteMany({ bookingId: id });
-    }
+    const booking = await Booking.findByIdAndUpdate(
+      id, 
+      { invoiceItems, finalPrice, status: 'Payment Pending' }, 
+      { new: true }
+    );
 
-    // --- REAL-TIME NOTIFICATION FOR CUSTOMER ---
-    const customerUser = await User.findOne({ email: updatedBooking.customerEmail });
-    if (customerUser) {
-      const notif = new Notification({ userId: customerUser._id, text: `Your booking for ${updatedBooking.service} was ${status}`, type: 'status' });
-      await notif.save();
-      req.app.get('io').to(customerUser._id.toString()).emit('receive_notification', notif);
-    }
-
-    res.status(200).json({ message: 'Status updated', booking: updatedBooking });
-  } catch (error) { res.status(500).json({ message: 'Failed to update status' }); }
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    res.json(booking);
+  } catch (error) {
+    res.status(500).json({ message: "Error submitting bill", error: error.message });
+  }
 };
 
-module.exports = { getMyBookings, getProviderBookings, createBooking, updateBookingStatus };
+// 2. Customer downloads the PDF
+exports.downloadInvoicePDF = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking.invoiceItems || booking.invoiceItems.length === 0) {
+      return res.status(400).json({ message: "No invoice generated yet." });
+    }
+
+    // Initialize PDF
+    const doc = new PDFDocument({ margin: 50 });
+
+    res.setHeader('Content-disposition', `attachment; filename="Invoice-${booking._id}.pdf"`);
+    res.setHeader('Content-type', 'application/pdf');
+
+    doc.pipe(res);
+
+    // Build PDF content
+    doc.fontSize(24).font('Helvetica-Bold').text('INVOICE', { align: 'center' }).moveDown();
+    
+    doc.fontSize(12).font('Helvetica');
+    doc.text(`Booking ID: ${booking._id}`);
+    doc.text(`Date of Service: ${new Date(booking.date).toLocaleDateString()}`);
+    doc.text(`Service: ${booking.service}`);
+    doc.text(`Provider: ${booking.provider}`);
+    doc.moveDown(2);
+
+    doc.fontSize(16).font('Helvetica-Bold').text('Itemized Charges', { underline: true }).moveDown();
+
+    // Loop through items
+    doc.fontSize(12).font('Helvetica');
+    booking.invoiceItems.forEach(item => {
+      doc.text(`${item.description}`, { continued: true });
+      doc.text(`₹${item.amount}`, { align: 'right' });
+    });
+
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(); // draw a line
+
+    doc.fontSize(18).font('Helvetica-Bold').text(`Total Amount: ₹${booking.finalPrice}`, { align: 'right' });
+
+    if(booking.status === 'Paid') {
+        doc.moveDown().fillColor('green').text('PAID IN FULL', { align: 'center' });
+    }
+
+    doc.end();
+
+  } catch (error) {
+    res.status(500).json({ message: "Error generating PDF", error: error.message });
+  }
+};

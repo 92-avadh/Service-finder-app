@@ -21,6 +21,9 @@ const ServiceDetails = () => {
   
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
+  // Get today's date in YYYY-MM-DD format to disable past dates
+  const today = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
     const fetchServiceDetails = async () => {
       try {
@@ -57,7 +60,7 @@ const ServiceDetails = () => {
         title: "Expert Residential Electrician",
         category: "Electrical",
         price: 499,
-        unit: "hr", // <--- Added unit for demo data
+        unit: "hr", 
         image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=600",
         about: "I have over 10 years of experience in residential and commercial electrical systems.",
         location: "Mumbai, Maharashtra",
@@ -119,6 +122,13 @@ const ServiceDetails = () => {
       alert("Please select both a date and a time for your appointment.");
       return;
     }
+    
+    // Additional validation to ensure past dates aren't manually bypassed
+    if (selectedDate < today) {
+      alert("You cannot book a service for a past date. Please select today or a future date.");
+      return;
+    }
+
     if (!address.trim()) {
       alert("Please provide your full address so the professional can reach you.");
       return;
@@ -293,7 +303,6 @@ const ServiceDetails = () => {
                 <span className="text-slate-500 dark:text-slate-400 font-bold">Estimated Rate</span>
                 <div className="text-right">
                   <span className="text-3xl font-black text-slate-900 dark:text-white">₹{service.price}</span>
-                  {/* Updated dynamic unit rendering here */}
                   <span className="text-slate-500 text-sm ml-1">/ {service.unit || 'hr'}</span>
                 </div>
               </div>
@@ -304,6 +313,7 @@ const ServiceDetails = () => {
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400">calendar_today</span>
                   <input 
                     type="date" 
+                    min={today}
                     className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all cursor-pointer"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
