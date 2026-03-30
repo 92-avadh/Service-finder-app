@@ -11,6 +11,9 @@ const CardForm = ({ booking, onSuccess }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // --- FIXED: Safe price check ---
+  const amountToPay = booking?.finalPrice || booking?.price || booking?.totalAmount || 0;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -22,7 +25,8 @@ const CardForm = ({ booking, onSuccess }) => {
       const res = await fetch('http://localhost:5000/api/payments/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ price: booking.finalPrice })
+        // --- FIXED: Pass the correct safe amount ---
+        body: JSON.stringify({ price: amountToPay })
       });
       const { clientSecret } = await res.json();
 
@@ -57,7 +61,8 @@ const CardForm = ({ booking, onSuccess }) => {
       </div>
       {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
       <button type="submit" disabled={loading || !stripe} className="w-full py-3.5 bg-primary hover:bg-blue-600 transition-colors text-white rounded-xl font-bold shadow-md shadow-primary/20 disabled:opacity-50">
-        {loading ? "Processing..." : `Pay ₹${booking.finalPrice}`}
+        {/* --- FIXED: Show correct amount on button --- */}
+        {loading ? "Processing..." : `Pay ₹${amountToPay}`}
       </button>
     </form>
   );
@@ -66,6 +71,9 @@ const CardForm = ({ booking, onSuccess }) => {
 const CheckoutModal = ({ booking, onClose, onSuccess }) => {
   const [method, setMethod] = useState('card');
   const [isProcessingCOD, setIsProcessingCOD] = useState(false);
+
+  // --- FIXED: Safe price check for the parent modal ---
+  const amountToPay = booking?.finalPrice || booking?.price || booking?.totalAmount || 0;
 
   const handleCOD = async () => {
     setIsProcessingCOD(true);
@@ -120,7 +128,8 @@ const CheckoutModal = ({ booking, onClose, onSuccess }) => {
           {/* Amount Due Box */}
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex justify-between items-center border border-blue-100 dark:border-blue-900/50">
             <span className="font-bold text-blue-800 dark:text-blue-300">Total Due</span>
-            <span className="text-2xl font-black text-blue-900 dark:text-white">₹{booking.finalPrice}</span>
+            {/* --- FIXED: Show the correct safe amount --- */}
+            <span className="text-2xl font-black text-blue-900 dark:text-white">₹{amountToPay}</span>
           </div>
 
           {/* Render Active Payment Form */}

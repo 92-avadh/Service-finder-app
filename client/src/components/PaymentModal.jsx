@@ -11,6 +11,11 @@ const CheckoutForm = ({ clientSecret, bookingData, onSuccess, onClose }) => {
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // --- FIXED: Safely calculate the amount to pay ---
+  // It checks for finalPrice first (from invoice), then falls back to regular price.
+  const rawAmount = bookingData?.finalPrice || bookingData?.price || bookingData?.totalAmount || 0;
+  const amountToPay = parseFloat(String(rawAmount).replace(/[^0-9.]/g, ''));
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!stripe || !elements) return;
@@ -62,6 +67,13 @@ const CheckoutForm = ({ clientSecret, bookingData, onSuccess, onClose }) => {
 
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      
+      {/* --- ADDED: Total Due Box --- */}
+      <div className="flex justify-between items-center p-4 bg-[#1A1F2B] dark:bg-slate-800 rounded-xl shadow-inner">
+         <span className="text-white font-medium">Total Due</span>
+         <span className="text-white font-bold text-xl">₹{amountToPay}</span>
+      </div>
+
       <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
         <CardElement options={{
           style: {
@@ -86,7 +98,8 @@ const CheckoutForm = ({ clientSecret, bookingData, onSuccess, onClose }) => {
         disabled={!stripe || isProcessing}
         className="w-full py-3.5 px-4 rounded-xl shadow-md text-sm font-bold text-white bg-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isProcessing ? 'Processing Payment...' : `Pay ₹${parseFloat(String(bookingData.price).replace(/[^0-9.]/g, ''))} securely`}
+        {/* --- FIXED: Using the safe amount variable --- */}
+        {isProcessing ? 'Processing Payment...' : `Pay ₹${amountToPay} securely`}
       </button>
     </form>
   );

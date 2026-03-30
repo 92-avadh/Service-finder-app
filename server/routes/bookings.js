@@ -4,7 +4,7 @@ const Booking = require('../models/Booking');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const verifyToken = require('../middleware/authMiddleware');
-const PDFDocument = require('pdfkit'); // <-- IMPORT PDFKIT
+const PDFDocument = require('pdfkit'); 
 
 // --- HELPER TO GENERATE DB NOTIFICATIONS & REAL-TIME EVENTS ---
 const notifyUsers = async (req, booking) => {
@@ -101,12 +101,10 @@ router.put('/:id/start', verifyToken, async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Error verifying OTP" }); }
 });
 
-// 3. SENDS ITEMIZED BILL (UPDATED)
+// 3. SENDS ITEMIZED BILL
 router.put('/:id/bill', verifyToken, async (req, res) => {
   try {
     const { invoiceItems } = req.body;
-    
-    // Calculate final price automatically
     const finalPrice = invoiceItems.reduce((total, item) => total + Number(item.amount), 0);
 
     const updatedBooking = await Booking.findByIdAndUpdate(
@@ -158,14 +156,11 @@ router.put('/:id/reschedule', verifyToken, async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Error rescheduling booking" }); }
 });
 
-// 7. DOWNLOAD INVOICE PDF (NEW)
+// 7. DOWNLOAD INVOICE PDF (UPDATED WITH FALLBACK)
 router.get('/:id/invoice', verifyToken, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-    if (!booking.invoiceItems || booking.invoiceItems.length === 0) {
-      return res.status(400).json({ message: "No invoice generated yet." });
-    }
 
     const doc = new PDFDocument({ margin: 50 });
     res.setHeader('Content-disposition', `attachment; filename="Invoice-${booking._id}.pdf"`);
@@ -182,18 +177,26 @@ router.get('/:id/invoice', verifyToken, async (req, res) => {
     doc.text(`Professional: ${booking.provider}`);
     doc.moveDown(2);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Itemized Charges', { underline: true }).moveDown();
-
+    doc.fontSize(16).font('Helvetica-Bold').text('Charges', { underline: true }).moveDown();
     doc.fontSize(12).font('Helvetica');
-    booking.invoiceItems.forEach(item => {
-      doc.text(`${item.description}`, { continued: true });
-      doc.text(`Rs. ${item.amount}`, { align: 'right' });
-    });
+
+    // --- FIXED: Fallback to original price if no itemized bill was generated ---
+    let totalAmountToPay = booking.finalPrice || booking.price || 0;
+
+    if (booking.invoiceItems && booking.invoiceItems.length > 0) {
+      booking.invoiceItems.forEach(item => {
+        doc.text(`${item.description}`, { continued: true });
+        doc.text(`Rs. ${item.amount}`, { align: 'right' });
+      });
+    } else {
+      doc.text(`Standard Service Charge`, { continued: true });
+      doc.text(`Rs. ${totalAmountToPay}`, { align: 'right' });
+    }
 
     doc.moveDown();
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(); 
 
-    doc.fontSize(18).font('Helvetica-Bold').text(`Total Amount: Rs. ${booking.finalPrice}`, { align: 'right' });
+    doc.fontSize(18).font('Helvetica-Bold').text(`Total Amount: Rs. ${totalAmountToPay}`, { align: 'right' });
 
     if(booking.status === 'Completed' || booking.status === 'Paid') {
         doc.moveDown(2).fillColor('green').fontSize(20).text('PAID IN FULL', { align: 'center' });
@@ -202,6 +205,7 @@ router.get('/:id/invoice', verifyToken, async (req, res) => {
     doc.end();
 
   } catch (error) {
+    console.error("PDF generation error:", error);
     res.status(500).json({ message: "Error generating PDF" });
   }
 });

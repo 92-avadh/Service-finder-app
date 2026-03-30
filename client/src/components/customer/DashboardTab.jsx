@@ -5,7 +5,7 @@ const DashboardTab = ({
   userName, 
   activeTab, 
   setActiveTab, 
-  bookings = [], // Added default empty array just in case
+  bookings = [], 
   isLoading, 
   setActiveChatBooking, 
   setActivePaymentBooking, 
@@ -60,7 +60,7 @@ const DashboardTab = ({
                       <p className="text-slate-500 text-sm font-medium mt-1">by {booking.provider}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                      booking.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      ['Completed', 'Paid'].includes(booking.status) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                       ['Payment Pending', 'Payment Verification'].includes(booking.status) ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500' :
                       booking.status === 'In Progress' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
                       booking.status === 'Pending' || !booking.status ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
@@ -103,7 +103,7 @@ const DashboardTab = ({
 
                   {booking.status === 'Payment Pending' && (
                     <button onClick={() => setActivePaymentBooking(booking)} className="w-full px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md animate-pulse whitespace-nowrap">
-                      Pay ₹{booking.finalPrice} Now
+                      Pay ₹{booking.finalPrice || booking.price} Now
                     </button>
                   )}
                   
@@ -113,17 +113,17 @@ const DashboardTab = ({
                     </span>
                   )}
 
-                  {/* --- FIXED: Safe check for invoiceItems --- */}
-                  {booking.status === 'Completed' && booking.invoiceItems && booking.invoiceItems.length > 0 && (
+                  {/* --- FIXED: Removed strict invoiceItems check so it ALWAYS shows up for Completed/Paid --- */}
+                  {['Completed', 'Paid', 'Payment Pending'].includes(booking.status) && (
                     <button 
                       onClick={() => handleDownloadInvoice(booking._id || booking.id)} 
                       className="w-full px-4 py-2.5 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1"
                     >
-                      <span className="material-symbols-outlined text-[18px]">download</span> Invoice
+                      <span className="material-symbols-outlined text-[18px]">download</span> Download Invoice
                     </button>
                   )}
 
-                  {booking.status === 'Completed' && (
+                  {['Completed', 'Paid'].includes(booking.status) && (
                     <button onClick={() => setActiveReviewBooking(booking)} className="w-full px-4 py-2.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500 rounded-xl text-sm font-bold hover:bg-yellow-200 transition-colors flex items-center justify-center gap-1">
                       <span className="material-symbols-outlined text-[18px]">star</span> Leave Review
                     </button>
