@@ -56,31 +56,30 @@ const ProviderDashboard = () => {
 
   useEffect(() => { fetchProviderBookings(); }, [fetchProviderBookings]);
 
-  // --- FIXED SOCKET LOGIC ---
+  // --- SOCKET LOGIC WITH UNIVERSAL MP3 ---
   useEffect(() => {
     if (!proId) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
     
     const socket = io('http://localhost:5000');    
-    
-    // Join the room using the provider's ID
     socket.emit('join_dashboard', String(proId));
 
     socket.on('new_booking_request', (newBooking) => {
-      // Play sound and show notification
-      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+      // FIXED: Using a reliable .mp3 file and catching autoplay blocks
+      try { 
+        const audio = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3');
+        audio.play().catch(() => {}); 
+      } catch(e){}
+
       if (Notification.permission === 'granted') {
         new Notification('New Job Request! 🚀', { body: `You have a new request for ${newBooking.service}!` });
       }
       
-      // Update state immediately without refreshing
       setBookings(prev => {
-        // Prevent duplicates just in case
         if (prev.some(b => b._id === newBooking._id)) return prev;
         return [newBooking, ...prev];
       });
       
-      // Fallback: Silently fetch from DB to ensure data consistency
       fetchProviderBookings(true);
     });
 
@@ -89,11 +88,15 @@ const ProviderDashboard = () => {
     });
 
     socket.on('receive_notification', (notif) => {
-      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+      // FIXED: Using a reliable .mp3 file and catching autoplay blocks
+      try { 
+        const audio = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3');
+        audio.play().catch(() => {}); 
+      } catch(e){}
+
       if (Notification.permission === 'granted') {
         new Notification('New Message! 💬', { body: notif.text });
       }
-      // If it's a notification about a new request, trigger a silent refresh
       if (notif.text.includes("New booking request")) {
         fetchProviderBookings(true);
       }

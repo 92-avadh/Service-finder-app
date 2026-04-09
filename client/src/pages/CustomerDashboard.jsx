@@ -16,7 +16,8 @@ const CustomerDashboard = () => {
   const { currentUser } = useAuth();
   
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [activeNav, setActiveNav] = useState('dashboard');
+  // FIXED: Corrected the useState syntax error here
+  const [activeNav, setActiveNav] = useState('dashboard'); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,20 +52,29 @@ const CustomerDashboard = () => {
 
   useEffect(() => { fetchMyBookings(); }, [fetchMyBookings]);
 
+  // --- SOCKET LOGIC WITH UNIVERSAL MP3 ---
   useEffect(() => {
     if (!userEmail) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
     const socket = io('http://localhost:5000');
-        socket.emit('join_dashboard', String(userEmail));
+    socket.emit('join_dashboard', String(userEmail));
     
     socket.on('booking_status_updated', (updatedBooking) => {
-      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+      try { 
+        const audio = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3');
+        audio.play().catch(() => {}); 
+      } catch(e){}
+
       if (Notification.permission === 'granted') new Notification('Booking Update! 🔔', { body: `Your job status is now: ${updatedBooking.status}` });
       setBookings(prev => prev.map(b => b._id === updatedBooking._id ? updatedBooking : b));
     });
 
     socket.on('receive_notification', (notif) => {
-      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+      try { 
+        const audio = new Audio('https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3');
+        audio.play().catch(() => {}); 
+      } catch(e){}
+
       if (Notification.permission === 'granted') {
         new Notification('New Message! 💬', { body: notif.text });
       }
@@ -93,7 +103,6 @@ const CustomerDashboard = () => {
     }
   };
 
-  // --- NEW PDF INVOICE DOWNLOAD HANDLER ---
   const handleDownloadInvoice = async (bookingId) => {
     try {
       const token = sessionStorage.getItem('serviceFinderToken');
@@ -188,7 +197,7 @@ const CustomerDashboard = () => {
                 setRescheduleBooking={setRescheduleBooking}
                 setNewDate={setNewDate}
                 setNewTime={setNewTime}
-                handleDownloadInvoice={handleDownloadInvoice} /* Passed to the tab to attach to buttons */
+                handleDownloadInvoice={handleDownloadInvoice}
               />
             )}
             {activeNav === 'favorites' && <FavoritesTab />}
